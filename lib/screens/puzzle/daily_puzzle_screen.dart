@@ -4,8 +4,8 @@ import '../../models/puzzle.dart';
 import '../../services/puzzle_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
+import '../../widgets/chess_board.dart';
 import '../../widgets/feedback_overlay.dart';
-import '../widgets/chess_board.dart';
 
 /// Daily puzzle screen. Loads today's puzzle (selected by day index
 /// from [PuzzleService]), shows the position + prompt, and asks the

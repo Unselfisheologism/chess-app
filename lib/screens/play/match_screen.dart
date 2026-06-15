@@ -128,7 +128,10 @@ class _MatchScreenState extends State<MatchScreen> {
                     ),
                     Text(
                       'moves: $_moveCount',
-                      style: Theme.of(context).textTheme.caption,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: BrandColors.lockedGrey,
+                      ),
                     ),
                   ],
                 ),
