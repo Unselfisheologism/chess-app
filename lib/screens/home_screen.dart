@@ -9,6 +9,7 @@ import '../../theme/spacing.dart';
 import 'lesson/lesson_player_screen.dart';
 import 'play/match_screen.dart';
 import 'puzzle/daily_puzzle_screen.dart';
+import 'stats/stats_screen.dart';
 import '../widgets/mascot.dart';
 
 /// Home screen. Shows the current day, the streak (with freeze
@@ -85,6 +86,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             icon: Icons.ac_unit,
                             value: state.freezeTokens,
                             label: state.freezeTokens == 1 ? 'freeze' : 'freezes',
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          IconButton(
+                            tooltip: 'Stats',
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const StatsScreen(),
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.insights,
+                              color: BrandColors.deepInk,
+                              size: 20,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
                           ),
                         ],
                       ),
