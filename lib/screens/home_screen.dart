@@ -5,11 +5,12 @@ import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 import '../lesson/lesson_player_screen.dart';
 import '../play/match_screen.dart';
+import '../puzzle/daily_puzzle_screen.dart';
 import '../widgets/mascot.dart';
 
 /// Home screen. Shows the current day, the streak (read from
 /// [StreakService]), and a CTA card to start today's lesson.
-/// Daily puzzle (U8) and match (U7) cards are placeholders.
+/// Daily puzzle (U8) and match (U7) cards are wired.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -79,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: AppSpacing.m),
               const Center(
-                child: Mascot(mood: MascotMood.idle, size: 140),
+                child: Mascot(mood: MascotMood.idle, size: 120),
               ),
               const SizedBox(height: AppSpacing.l),
               Text(
@@ -99,7 +100,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (_) => const LessonPlayerScreen(day: 1),
                     ),
                   );
-                  // Lesson finished (or popped back); refresh the streak.
                   await _refreshStreak();
                 },
               ),
@@ -110,14 +110,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _SecondaryCard(
                       icon: Icons.extension,
                       title: 'Daily puzzle',
-                      subtitle: 'U8',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Daily puzzle lands in U8 (next push).'),
-                          ),
-                        );
-                      },
+                      subtitle: 'Find the move',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const DailyPuzzleScreen(day: 1),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.s),
@@ -140,63 +138,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Complete a lesson to keep your streak alive.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SecondaryCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _SecondaryCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(AppSpacing.m),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.m),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: Row(
-            children: [
-              Icon(icon, color: BrandColors.deepInk, size: 24),
-              const SizedBox(width: AppSpacing.s),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: BrandColors.deepInk,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: BrandColors.lockedGrey,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
@@ -288,6 +229,64 @@ class _LessonCard extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: BrandColors.deepInk,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SecondaryCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppSpacing.m),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.m),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          child: Row(
+            children: [
+              Icon(icon, color: BrandColors.deepInk, size: 24),
+              const SizedBox(width: AppSpacing.s),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: BrandColors.deepInk,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: BrandColors.lockedGrey,
                       ),
                     ),
                   ],
