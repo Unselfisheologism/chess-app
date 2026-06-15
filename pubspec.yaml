@@ -17,19 +17,16 @@ dependencies:
   # State management
   provider: ^6.1.1
 
-  # Chess
-  chess: ^0.7.0
-  stockfish_for_flutter: ^1.0.0
+  # Chess engine — using stockfish_flutter_plus because the older stockfish_for_flutter
+  # (0.1.2) declares SDK <3.0.0 and won't resolve on Dart 3.4.
+  stockfish_flutter_plus: ^1.0.1
 
-  # iOS Screen Time API (iOS 15+)
-  flutter_family_controls: ^0.0.3
+  # Animations — pinned to 2.7.0 (last 2.x release). Lottie 3.x requires Flutter 3.27+
+  # because it adopted Color.toARGB32. Bump lottie to ^3.x once project upgrades Flutter.
+  lottie: '>=2.7.0 <3.0.0'
 
-  # Animations — pinned to 2.x to avoid Color.toARGB32 (Flutter 3.27+ API).
-  # Bump lottie to ^3.x once project upgrades to Flutter 3.27+.
-  lottie: '>=2.0.0 <3.0.0'
-
-  # Subscriptions (RevenueCat)
-  purchases_flutter: ^8.0.0
+  # Subscriptions (RevenueCat) — SDK 3.4.0+ matches our Dart 3.4.
+  purchases_flutter: ^10.0.0
 
 dev_dependencies:
   flutter_test:
