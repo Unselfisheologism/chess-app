@@ -71,7 +71,7 @@ class StockfishService {
         }
       });
       final move = await completer.future.timeout(
-        const Duration(seconds: movetimeMs + 3000),
+        Duration(seconds: (movetimeMs / 1000).ceil() + 3),
         onTimeout: () {
           sub.cancel();
           engine.stdin = 'stop';
