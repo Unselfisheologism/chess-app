@@ -50,7 +50,20 @@ android {
                     storePassword(storePasswordVal)
                     keyAlias(keyAliasVal)
                     keyPassword(keyPasswordVal)
+                } else {
+                    // keystore.properties is a placeholder; fall back to debug
+                    // so the signingConfig is always valid.
+                    storeFile file("${System.getProperty('user.home')}/.android/debug.keystore")
+                    storePassword 'android'
+                    keyAlias 'androiddebugkey'
+                    keyPassword 'android'
                 }
+            } else {
+                // No keystore.properties at all; use debug keystore for CI.
+                storeFile file("${System.getProperty('user.home')}/.android/debug.keystore")
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
             }
         }
     }
