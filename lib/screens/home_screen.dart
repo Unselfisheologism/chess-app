@@ -4,7 +4,6 @@ import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 import 'lesson/lesson_player_screen.dart';
-import 'play/match_screen.dart';
 import 'puzzle/daily_puzzle_screen.dart';
 import '../widgets/mascot.dart';
 
@@ -123,12 +122,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _SecondaryCard(
                       icon: Icons.smart_toy,
                       title: 'Play Stockfish',
-                      subtitle: 'Tap to play',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const MatchScreen(),
-                        ),
-                      ),
+                      subtitle: 'Coming in U7.1',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Stockfish hits a Flutter 3.22 Gradle auto-discovery issue. Will revisit as a custom platform channel in U7.1.',
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],

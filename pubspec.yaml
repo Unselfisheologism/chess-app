@@ -23,10 +23,6 @@ dependencies:
   # because it adopted Color.toARGB32. Bump lottie to ^3.x once project upgrades Flutter.
   lottie: '>=2.7.0 <3.0.0'
 
-  # Chess engine — stockfish_flutter_plus (Dart 3+, FFI, 16KB page
-  # support). stockfish_for_flutter is abandoned (Dart 2.x only).
-  stockfish_flutter_plus: ^1.0.1
-
 # Force the *native* side to the same pre-Pigeon, pre-Dart-3.5
 # version. Pinning just `shared_preferences` above is not enough
 # because `shared_preferences_android` is a separate package
