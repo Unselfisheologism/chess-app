@@ -1,0 +1,32 @@
+{
+  "id": "day_02_piece_values",
+  "day": 2,
+  "title": "Piece Values",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "Roughly, how many pawns is a queen worth?",
+      "options": ["3", "5", "8", "9"],
+      "correctIndex": 3,
+      "explanation": "A queen is worth about 9 pawns. She is the most powerful piece — roughly equal to 2 rooks, or a rook + a minor piece + a pawn."
+    },
+    {
+      "id": "q2",
+      "shellType": "multipleChoice",
+      "prompt": "Which is worth more: a bishop or a knight?",
+      "options": ["Bishop", "Knight", "Roughly equal", "Depends entirely on the position"],
+      "correctIndex": 2,
+      "explanation": "Both are worth 3 pawns in isolation. In practice, bishops tend to be slightly stronger in open positions, knights slightly stronger in closed ones — but the base value is the same."
+    },
+    {
+      "id": "q3",
+      "shellType": "multipleChoice",
+      "prompt": "You're up a full rook (worth ~5 pawns). What's the result?",
+      "options": ["Draw with best play", "Should win", "Should lose", "Whichever side has more pawns wins"],
+      "correctIndex": 1,
+      "explanation": "A rook up is a winning advantage in nearly every position. With good technique you should convert to a win; trading pieces and activating your king are the keys."
+    }
+  ]
+}

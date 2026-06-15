@@ -1,0 +1,47 @@
+{
+  "id": "day_03_pin_tactic",
+  "day": 3,
+  "title": "Pins",
+  "estimatedMinutes": 10,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "What is a 'pin' in chess?",
+      "options": [
+        "A piece that can't move without exposing a more valuable piece behind it",
+        "A piece trapped on the edge of the board with no escape squares",
+        "Two of your pieces attacking the same square at once",
+        "A check that the opponent cannot escape from"
+      ],
+      "correctIndex": 0,
+      "explanation": "A pin ties a piece to defending something more valuable behind it. Move the pinned piece, lose the bigger piece (or the king, in an absolute pin)."
+    },
+    {
+      "id": "q2",
+      "shellType": "tapSquare",
+      "prompt": "White bishop is on c1. The black knight is on c6 and the black king is on e8. Tap the square the bishop should move to in order to pin the knight to the king.",
+      "board": {
+        "c1": "B",
+        "c6": "n",
+        "e8": "k",
+        "e1": "K"
+      },
+      "correctSquare": "b5",
+      "explanation": "Move Bc1-b5. The bishop is now on the b5-e8 diagonal, with the black knight on c6 in between. The knight is absolutely pinned — it can't move without exposing the king to check."
+    },
+    {
+      "id": "q3",
+      "shellType": "multipleChoice",
+      "prompt": "If a piece is absolutely pinned (pinned to the king), what can it do?",
+      "options": [
+        "Move anywhere as long as the king stays in check",
+        "Move only to squares that don't expose the king to check",
+        "Capture the pinning piece",
+        "Nothing — pinned pieces can't move at all"
+      ],
+      "correctIndex": 1,
+      "explanation": "An absolutely pinned piece CAN still move — but only to squares that don't expose the king to check. In practice, that's often no squares at all, but the rule is about check, not immobility."
+    }
+  ]
+}

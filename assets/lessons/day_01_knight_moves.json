@@ -1,0 +1,36 @@
+{
+  "id": "day_01_knight_moves",
+  "day": 1,
+  "title": "Knight Moves",
+  "estimatedMinutes": 8,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "A knight moves in which shape?",
+      "options": ["L-shape (2 squares + 1)", "Diagonal", "Straight line", "1 square in any direction"],
+      "correctIndex": 0,
+      "explanation": "The knight moves 2 squares in one direction and 1 perpendicular — forming an L. It's the only piece that can jump over other pieces."
+    },
+    {
+      "id": "q2",
+      "shellType": "tapSquare",
+      "prompt": "A white knight is on e4. Tap the square it can reach.",
+      "board": {
+        "e1": "K",
+        "e8": "k",
+        "e4": "N"
+      },
+      "correctSquare": "f6",
+      "explanation": "From e4, a knight can reach 8 squares: d6, f6, c5, g5, c3, g3, d2, f2. f6 is one of them — straight up the file by 2 ranks, over one."
+    },
+    {
+      "id": "q3",
+      "shellType": "multipleChoice",
+      "prompt": "How many squares can a knight reach from the center of an empty board?",
+      "options": ["2", "4", "6", "8"],
+      "correctIndex": 3,
+      "explanation": "8. A knight has up to 8 moves from the center, the most of any piece. From d4, e4, d5, or e5, all 8 are on the board."
+    }
+  ]
+}
