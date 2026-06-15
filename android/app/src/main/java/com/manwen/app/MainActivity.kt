@@ -8,6 +8,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import com.manwen.app.services.SiteBlockerService
+import io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -38,6 +39,20 @@ class MainActivity: FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Register the local SharedPreferencesPlugin. The pubspec
+        // pins shared_preferences to 2.2.x (Dart 3.4 compatible), but
+        // the Flutter Gradle plugin's auto-generated registrant
+        // doesn't compile the local
+        // android/app/src/main/java/io/flutter/plugins/sharedpreferences/
+        // SharedPreferencesPlugin.java into the release APK under this
+        // project setup. Registering it explicitly here bypasses that
+        // gap. Without this, every SharedPreferences call from Dart
+        // throws 'PlatformException(channel-error, Unable to
+        // establish connection on channel.)' — which manifests as
+        // 'Failed to load stats' on the StatsScreen and a silent
+        // always-zero streak on the home screen.
+        flutterEngine.plugins.add(SharedPreferencesPlugin())
 
         // Existing platform channel for site blocker / paywall
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel).setMethodCallHandler { call, result ->
