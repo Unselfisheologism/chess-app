@@ -1,10 +1,11 @@
+import 'package:chess_do_it/widgets/mascot.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 
-/// Shown when a lesson is finished. Celebrates the score, links to
-/// "back to home" and (in U5) "play today's match for a freeze token."
+/// Shown when a lesson is finished. The mascot celebrates alongside
+/// the score.
 class CompletionScreen extends StatelessWidget {
   final int day;
   final int score;
@@ -29,10 +30,8 @@ class CompletionScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(
-                Icons.emoji_events,
-                size: 96,
-                color: BrandColors.gold,
+              const Center(
+                child: Mascot(mood: MascotMood.celebrate, size: 180),
               ),
               const SizedBox(height: AppSpacing.l),
               Text(

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/brand.dart';
-import '../../theme/spacing.dart';
-import '../lesson/lesson_player_screen.dart';
+import '../theme/brand.dart';
+import '../theme/spacing.dart';
+import '../widgets/mascot.dart';
+import 'home/home_screen.dart';
 
-/// Home screen. Shows the current day, the streak (hardcoded to 0
-/// until U5's StreakService is wired in), and a CTA card to start
-/// today's lesson. Daily puzzle and match are placeholders until
-/// U6/U8.
+/// Home screen. Shows the current day, the streak (read from
+/// StreakService via a [FutureBuilder] for now), and a CTA card to
+/// start today's lesson. Daily puzzle and match are placeholders
+/// until U7/U8.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -38,15 +39,20 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         '0',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: BrandColors.gold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  color: BrandColors.gold,
+                                ),
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: AppSpacing.m),
+              const Center(
+                child: Mascot(mood: MascotMood.idle, size: 140),
+              ),
+              const SizedBox(height: AppSpacing.l),
               Text(
                 "Today's lesson",
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -60,21 +66,9 @@ class HomeScreen extends StatelessWidget {
                 minutes: 8,
                 onStart: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const LessonPlayerScreen(day: 1),
+                    builder: (_) => const HomeScreen(), // placeholder
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.l),
-              _DisabledCard(
-                icon: Icons.extension,
-                title: 'Daily puzzle',
-                subtitle: 'Coming in U8',
-              ),
-              const SizedBox(height: AppSpacing.m),
-              _DisabledCard(
-                icon: Icons.sports_esports,
-                title: 'Play Stockfish',
-                subtitle: 'Coming in U7',
               ),
               const Spacer(),
               Text(
@@ -179,61 +173,6 @@ class _LessonCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DisabledCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _DisabledCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.5,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.l),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppSpacing.m),
-          border: Border.all(color: BrandColors.lockedGrey, width: 1),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: BrandColors.lockedGrey, size: 24),
-            const SizedBox(width: AppSpacing.m),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: BrandColors.lockedGrey,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: BrandColors.lockedGrey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
