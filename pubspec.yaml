@@ -23,6 +23,10 @@ dependencies:
   # because it adopted Color.toARGB32. Bump lottie to ^3.x once project upgrades Flutter.
   lottie: '>=2.7.0 <3.0.0'
 
+  # HTTP client — pure Dart, no native code, used by U7.1's
+  # Stockfish service (which calls lichess's cloud-eval API).
+  http: ^1.0.0
+
 # Force the *native* side to the same pre-Pigeon, pre-Dart-3.5
 # version. Pinning just `shared_preferences` above is not enough
 # because `shared_preferences_android` is a separate package
