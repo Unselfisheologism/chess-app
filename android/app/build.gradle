@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace "com.unselfisheologism.chess_do_it"
+    namespace "com.manwen.app"
     compileSdk 34
 
     compileOptions {
