@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/lesson.dart';
+import '../../services/lesson_loader.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/feedback_overlay.dart';
