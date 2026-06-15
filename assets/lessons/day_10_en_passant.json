@@ -1,0 +1,42 @@
+{
+  "id": "day_10_en_passant",
+  "day": 10,
+  "title": "En Passant",
+  "estimatedMinutes": 5,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "What is 'en passant'?",
+      "options": [
+        "A special pawn capture when the opponent's pawn double-steps next to yours",
+        "A pass move that doesn't change the position",
+        "Castling on the opponent's side",
+        "A piece that skips a turn"
+      ],
+      "correctIndex": 0,
+      "explanation": "En passant (French for 'in passing') is a special pawn capture. If your pawn is on the 5th rank and the opponent's pawn moves two squares from its starting rank and lands next to yours, you can capture it as if it had moved only one square. The capture must be done on the very next move."
+    },
+    {
+      "id": "q2",
+      "shellType": "tapSquare",
+      "prompt": "White pawn on e5. Black just played d7-d5. The white pawn can capture en passant. Tap the destination square.",
+      "fen": "8/8/8/3pP3/8/8/8/4K2k w - - 0 1",
+      "correctSquare": "d6",
+      "explanation": "exd6! Even though the black pawn moved two squares to d5, the white pawn captures it as if it had only moved to d6 — and the white pawn ends up on d6. This is the only move in chess that captures a piece on a different square from the destination."
+    },
+    {
+      "id": "q3",
+      "shellType": "multipleChoice",
+      "prompt": "When must you capture en passant, if at all?",
+      "options": [
+        "Only on the very next move — if you play any other move, the right is lost",
+        "Whenever you want, any time in the game",
+        "Only on your turn, but it can be any future turn",
+        "Only if the opponent reminds you"
+      ],
+      "correctIndex": 0,
+      "explanation": "The en passant capture is only legal on the very next move. If you play any other move first, the right to capture en passant is lost forever. Many players forget this and accidentally leave a pawn hanging."
+    }
+  ]
+}

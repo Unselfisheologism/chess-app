@@ -1,0 +1,42 @@
+{
+  "id": "day_06_discovered_attack",
+  "day": 6,
+  "title": "Discovered Attacks",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "What is a 'discovered attack'?",
+      "options": [
+        "Moving one piece reveals an attack by another piece that was blocked behind it",
+        "An attack from a piece the opponent forgot about",
+        "A piece moving to an unexpected square",
+        "Two pieces coordinating to attack the same square"
+      ],
+      "correctIndex": 0,
+      "explanation": "A discovered attack happens when one piece moves out of the way, revealing an attack by another piece that was hiding behind it. The moved piece and the unmasked piece both have threats — two for the price of one move."
+    },
+    {
+      "id": "q2",
+      "shellType": "tapSquare",
+      "prompt": "The white knight on f3 blocks the bishop on e2 from seeing the black king on h5. Move the knight to a square that captures the queen on e5 AND discovers the bishop's attack.",
+      "fen": "8/8/8/4q2k/8/5N2/4B3/8 w - - 0 1",
+      "correctSquare": "e5",
+      "explanation": "Nxe5! The knight captures the queen, and the bishop on e2 now has a clear diagonal to the king on h5. Black faces two threats at once and can only meet one."
+    },
+    {
+      "id": "q3",
+      "shellType": "multipleChoice",
+      "prompt": "Why is a discovered attack often very strong?",
+      "options": [
+        "It can create two threats at once, forcing the opponent to deal with only one",
+        "It always wins material",
+        "It only works in the opening",
+        "It uses a knight, which is the most valuable minor piece"
+      ],
+      "correctIndex": 0,
+      "explanation": "A discovered attack creates a 'double threat' — the moved piece and the unmasked piece each have their own threat. The opponent can only meet one, so they always lose something."
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "id": "day_09_castling",
+  "day": 9,
+  "title": "Castling",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "Why do strong players usually castle early?",
+      "options": [
+        "It tucks the king away to safety and connects the rooks",
+        "It always wins a piece",
+        "It puts a rook in the center",
+        "It frees up the queen to attack"
+      ],
+      "correctIndex": 0,
+      "explanation": "Castling is the only move in chess that moves two pieces at once. It tucks the king behind a wall of pawns and lets the rook enter the game on a more active file. Two birds, one move."
+    },
+    {
+      "id": "q2",
+      "shellType": "multipleChoice",
+      "prompt": "When is castling NOT allowed?",
+      "options": [
+        "The king has already moved, the rook has already moved, pieces are between them, OR the king is currently in check",
+        "Only when the king is in check",
+        "Only after move 10",
+        "Never — castling is always allowed"
+      ],
+      "correctIndex": 0,
+      "explanation": "You can't castle if: the king OR the chosen rook has already moved, there are pieces between them, OR the king is currently in check. (Note: the king can castle OUT OF, through, or into check is also forbidden if any of those squares is attacked.)"
+    },
+    {
+      "id": "q3",
+      "shellType": "tapSquare",
+      "prompt": "White to castle kingside. Tap the square the king ENDS UP on after the castling move.",
+      "fen": "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
+      "correctSquare": "g1",
+      "explanation": "Kingside castling: the king moves e1 -> g1, the rook moves h1 -> f1. The king ends on g1. The rook ends on f1. Queenside castling would have been e1 -> c1 and a1 -> d1."
+    }
+  ]
+}

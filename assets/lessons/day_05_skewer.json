@@ -1,0 +1,42 @@
+{
+  "id": "day_05_skewer",
+  "day": 5,
+  "title": "Skewers",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "What is a 'skewer' in chess?",
+      "options": [
+        "Like a pin, but the more valuable piece is in front and must move first",
+        "A piece moving in a zigzag pattern",
+        "Two pieces attacking the same square",
+        "A pawn capturing two pieces at once"
+      ],
+      "correctIndex": 0,
+      "explanation": "A skewer is the reverse of a pin: a valuable piece (usually the king) is in front, and a less valuable piece is directly behind. When the valuable piece moves out of the way, the behind-piece is exposed."
+    },
+    {
+      "id": "q2",
+      "shellType": "tapSquare",
+      "prompt": "The white bishop on c1 can skewer the black king on e3 (in front) and the black rook on g5 (behind). Tap the square the bishop should move to.",
+      "fen": "8/8/8/6r1/8/4k3/8/2B5 w - - 0 1",
+      "correctSquare": "d2",
+      "explanation": "Bd2! The bishop steps to d2, on the c1-h6 diagonal. It attacks the king on e3; when the king moves out of the way, the rook on g5 is exposed and falls."
+    },
+    {
+      "id": "q3",
+      "shellType": "multipleChoice",
+      "prompt": "What's the key difference between a pin and a skewer?",
+      "options": [
+        "A pin has the more valuable piece in BACK (it can't move); a skewer has it in FRONT (it must move)",
+        "A pin only works with rooks; a skewer only works with bishops",
+        "There's no difference",
+        "A pin is in the opening; a skewer is in the endgame"
+      ],
+      "correctIndex": 0,
+      "explanation": "Pin: valuable piece is in BACK, frozen (can't expose the king). Skewer: valuable piece is in FRONT, forced to move and reveal the weaker piece behind."
+    }
+  ]
+}

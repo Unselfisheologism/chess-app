@@ -1,0 +1,42 @@
+{
+  "id": "day_07_checkmate_one",
+  "day": 7,
+  "title": "Mate in 1",
+  "estimatedMinutes": 7,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "What is 'checkmate'?",
+      "options": [
+        "The king is in check and has no legal way to escape — game over",
+        "The king is being attacked by a piece",
+        "A pawn that has reached the other side of the board",
+        "A piece that cannot move because it's blocked"
+      ],
+      "correctIndex": 0,
+      "explanation": "Checkmate = king in check + no legal move (no safe king square, no piece to block, no piece to capture the checker). When this happens, the game ends immediately."
+    },
+    {
+      "id": "q2",
+      "shellType": "tapSquare",
+      "prompt": "White to move. Find the checkmate in 1 — the queen is on e5, the rook is on e1, the black king is on e8.",
+      "fen": "4k3/7p/8/4Q3/8/8/8/4R3 w - - 0 1",
+      "correctSquare": "e8",
+      "explanation": "Qe8#! The queen moves to e8, delivering check. The king can't go to g8 (queen covers the back rank), can't capture the queen (rook on e1 supports it), and no piece can block. Checkmate."
+    },
+    {
+      "id": "q3",
+      "shellType": "multipleChoice",
+      "prompt": "What's the difference between 'check' and 'checkmate'?",
+      "options": [
+        "Check means the king is attacked but can escape; checkmate means no escape possible",
+        "Check and checkmate are the same thing",
+        "Check is for pawns; checkmate is for kings",
+        "Checkmate only happens on the back rank"
+      ],
+      "correctIndex": 0,
+      "explanation": "Check = king is under attack, but the player has at least one legal response (move the king, block with another piece, or capture the checking piece). Checkmate = king is under attack with zero legal responses — the game ends."
+    }
+  ]
+}

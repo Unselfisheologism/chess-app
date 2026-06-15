@@ -12,9 +12,13 @@ import 'puzzle/daily_puzzle_screen.dart';
 import 'stats/stats_screen.dart';
 import '../widgets/mascot.dart';
 
+/// Total lessons bundled. Update this when adding a new day_XX.json.
+const int kTotalDays = 10;
+
 /// Home screen. Shows the current day, the streak (with freeze
-/// tokens), the at-risk banner if today's lesson is overdue, and
-/// the CTA cards to start today's lesson / play / solve.
+/// tokens), the at-risk banner if today's lesson is overdue, a day
+/// picker for navigating between days, and the CTA cards to start
+/// today's lesson / play / solve.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -23,7 +27,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const int _streakOffset = 1; // days completed -> next day
   Future<StreakState>? _streakFuture;
+  int _selectedDay = 1;
 
   @override
   void initState() {
@@ -38,11 +44,16 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _streakFuture = next;
     });
-    await next;
+    final s = await next;
+    if (!mounted) return;
+    setState(() {
+      // After a lesson, jump to the next un-completed day.
+      _selectedDay = _nextDayFor(s.totalLessonsCompleted);
+    });
   }
 
   /// True when the user has an active streak but hasn't completed
-  /// today's lesson yet. The at-risk banner shows this.
+  /// today's lesson yet.
   static bool _isStreakAtRisk(StreakState s) {
     if (s.currentStreak == 0) return false;
     final last = s.lastLessonDate;
@@ -51,6 +62,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return !(last.year == now.year &&
         last.month == now.month &&
         last.day == now.day);
+  }
+
+  static int _nextDayFor(int lessonsCompleted) {
+    final next = lessonsCompleted + _streakOffset;
+    if (next > kTotalDays) return kTotalDays; // capped
+    return next;
   }
 
   @override
@@ -114,9 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: AppSpacing.m),
               const Center(
-                child: Mascot(mood: MascotMood.idle, size: 120),
+                child: Mascot(mood: MascotMood.idle, size: 100),
               ),
-              const SizedBox(height: AppSpacing.m),
+              const SizedBox(height: AppSpacing.s),
               FutureBuilder<StreakState>(
                 future: _streakFuture,
                 builder: (context, snap) {
@@ -156,21 +173,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const SizedBox(height: AppSpacing.m),
-              Text(
-                "Today's lesson",
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: BrandColors.lockedGrey,
-                    ),
+              FutureBuilder<StreakState>(
+                future: _streakFuture,
+                builder: (context, snap) {
+                  final completed = snap.data?.totalLessonsCompleted ?? 0;
+                  return _DayPicker(
+                    totalDays: kTotalDays,
+                    lessonsCompleted: completed,
+                    selectedDay: _selectedDay,
+                    onPick: (day) {
+                      if (day == _selectedDay) return;
+                      setState(() {
+                        _selectedDay = day;
+                      });
+                    },
+                  );
+                },
               ),
               const SizedBox(height: AppSpacing.s),
               _LessonCard(
-                day: 1,
-                title: 'Knight Moves',
-                minutes: 8,
+                day: _selectedDay,
                 onStart: () async {
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const LessonPlayerScreen(day: 1),
+                      builder: (_) => LessonPlayerScreen(day: _selectedDay),
                     ),
                   );
                   await _refreshStreak();
@@ -266,16 +292,113 @@ class _StreakChip extends StatelessWidget {
   }
 }
 
+class _DayPicker extends StatelessWidget {
+  final int totalDays;
+  final int lessonsCompleted;
+  final int selectedDay;
+  final void Function(int day) onPick;
+
+  const _DayPicker({
+    required this.totalDays,
+    required this.lessonsCompleted,
+    required this.selectedDay,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: totalDays,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.xs),
+        itemBuilder: (context, i) {
+          final day = i + 1;
+          final isDone = day <= lessonsCompleted;
+          final isCurrent = day == selectedDay;
+          return _DayChip(
+            day: day,
+            isDone: isDone,
+            isCurrent: isCurrent,
+            onTap: () => onPick(day),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DayChip extends StatelessWidget {
+  final int day;
+  final bool isDone;
+  final bool isCurrent;
+  final VoidCallback onTap;
+
+  const _DayChip({
+    required this.day,
+    required this.isDone,
+    required this.isCurrent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color bg;
+    Color fg;
+    if (isCurrent) {
+      bg = BrandColors.gold;
+      fg = BrandColors.deepInk;
+    } else if (isDone) {
+      bg = BrandColors.deepInk;
+      fg = BrandColors.cream;
+    } else {
+      bg = Colors.white;
+      fg = BrandColors.deepInk;
+    }
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(AppSpacing.m),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.m),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.m,
+            vertical: AppSpacing.s,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isDone)
+                const Icon(Icons.check, size: 14, color: BrandColors.cream)
+              else if (isCurrent)
+                const Icon(Icons.play_arrow, size: 14, color: BrandColors.deepInk)
+              else
+                const Icon(Icons.lock_outline, size: 14, color: BrandColors.lockedGrey),
+              const SizedBox(width: 4),
+              Text(
+                'Day $day',
+                style: TextStyle(
+                  color: isCurrent || isDone ? fg : BrandColors.lockedGrey,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _LessonCard extends StatelessWidget {
   final int day;
-  final String title;
-  final int minutes;
   final VoidCallback onStart;
 
   const _LessonCard({
     required this.day,
-    required this.title,
-    required this.minutes,
     required this.onStart,
   });
 
@@ -311,20 +434,12 @@ class _LessonCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.s),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 28,
+              const Text(
+                'Tap to start',
+                style: TextStyle(
+                  fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: BrandColors.cream,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                '~$minutes minutes',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: BrandColors.cream.withOpacity(0.7),
                 ),
               ),
               const SizedBox(height: AppSpacing.l),

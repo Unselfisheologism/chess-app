@@ -1,0 +1,42 @@
+{
+  "id": "day_08_opening_principles",
+  "day": 8,
+  "title": "Opening Principles",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "Which squares are the 'center' of the chessboard?",
+      "options": [
+        "d4, d5, e4, e5",
+        "a4, h4, a5, h5",
+        "d1, e1, d8, e8",
+        "The four corners"
+      ],
+      "correctIndex": 0,
+      "explanation": "The four center squares — d4, d5, e4, e5 — are the most important squares on the board. Pieces in the center control more squares and are harder to attack."
+    },
+    {
+      "id": "q2",
+      "shellType": "multipleChoice",
+      "prompt": "Which of these is a good opening move?",
+      "options": [
+        "e4 — controls the center and opens lines for the queen and bishop",
+        "a4 — a wing pawn move that doesn't fight for the center",
+        "h4 — same, just on the other wing",
+        "Na3 — a knight that goes to a less useful square"
+      ],
+      "correctIndex": 0,
+      "explanation": "e4 (and d4) are excellent opening moves because they fight for the center, free up the queen and king's bishop, and create immediate pressure. Wing pawn moves (a3/h3) and odd knight jumps (Na3/Nh3) waste tempo."
+    },
+    {
+      "id": "q3",
+      "shellType": "tapSquare",
+      "prompt": "Tap any of the four center squares — d4, d5, e4, or e5 — to identify where pieces want to be in the opening.",
+      "fen": "8/8/8/8/8/8/8/4K2k w - - 0 1",
+      "correctSquare": "d4",
+      "explanation": "d4 is one of the four center squares. So is d5, e4, e5. These are the squares your pieces want to influence in the opening — controlling them gives your army more power and flexibility."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "id": "day_04_knight_fork",
+  "day": 4,
+  "title": "Knight Forks",
+  "estimatedMinutes": 6,
+  "questions": [
+    {
+      "id": "q1",
+      "shellType": "multipleChoice",
+      "prompt": "What is a 'fork' in chess?",
+      "options": [
+        "A single piece attacking two or more enemy pieces at once",
+        "A piece defended by another piece",
+        "Two pieces trading places on the board",
+        "A pawn capturing diagonally"
+      ],
+      "correctIndex": 0,
+      "explanation": "A fork is when a single piece attacks two or more enemy pieces simultaneously. Knights are the best forkers because their L-shape can attack squares of both colors."
+    },
+    {
+      "id": "q2",
+      "shellType": "tapSquare",
+      "prompt": "Find the square for the white knight on e5 to fork the black king on d8 and the black queen on f6.",
+      "fen": "3k4/8/5q2/4N3/8/8/8/4K3 w - - 0 1",
+      "correctSquare": "d7",
+      "explanation": "Nd7+! The knight lands on d7, attacking the king on d8 (check!) and the queen on f6. Black must respond to the check, and White wins the queen next move."
+    },
+    {
+      "id": "q3",
+      "shellType": "multipleChoice",
+      "prompt": "Which piece is the most effective for forking in chess?",
+      "options": ["Pawn", "Knight", "Bishop", "Rook"],
+      "correctIndex": 1,
+      "explanation": "Knights are the best forkers. Their L-shaped move can attack squares of any color. Bishops only attack one color. Rooks and queens attack in straight lines, which the opponent can usually block."
+    }
+  ]
+}
