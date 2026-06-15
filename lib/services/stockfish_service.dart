@@ -21,11 +21,13 @@ class StockfishEvaluation {
   /// Human-readable eval string. "M3" for mate-in-3, "+1.5" for
   /// centipawn-150, "0.00" for equal.
   String get evalSummary {
-    if (mateIn != null) {
-      return 'M${mateIn! > 0 ? mateIn : -mateIn}';
+    final m = mateIn;
+    if (m != null) {
+      return 'M${m > 0 ? m : -m}';
     }
-    if (centipawns != null) {
-      final pawns = centipawns! / 100;
+    final cp = centipawns;
+    if (cp != null) {
+      final pawns = cp / 100;
       return pawns >= 0 ? '+${pawns.toStringAsFixed(2)}' : pawns.toStringAsFixed(2);
     }
     return 'eval unknown';
