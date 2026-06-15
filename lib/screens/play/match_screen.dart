@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../services/analytics_service.dart';
 import '../../services/stockfish_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
@@ -47,10 +50,19 @@ class _MatchScreenState extends State<MatchScreen> {
       _isThinking = true;
       _status = 'Asking chessito AI...';
     });
+    unawaited(AnalyticsService.instance.track('chessito_request', properties: {
+      'move_count': _moveCount,
+    }));
+    final t0 = DateTime.now();
     try {
       final fen = _toFen(_position);
       final eval = await _service.getBestMove(fen);
       if (!mounted) return;
+      unawaited(AnalyticsService.instance.track('chessito_response', properties: {
+        'move': eval.bestMove,
+        'depth': eval.depth,
+        'latency_ms': DateTime.now().difference(t0).inMilliseconds,
+      }));
       setState(() {
         _position = _applyMove(_position, eval.bestMove);
         _moveCount++;

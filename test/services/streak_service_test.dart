@@ -1,20 +1,20 @@
-import 'package:flutter/material.dart';
+import 'package:chess_do_it/services/analytics_service.dart';
+import 'package:chess_do_it/services/streak_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:chess_do_it/services/streak_service.dart';
-
 void main() {
-  group('StreakService.markLessonComplete', () {
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      // Reset the singleton between tests by clearing storage.
-      await StreakService.instance.reset();
-    });
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await StreakService.instance.reset();
+    await AnalyticsService.instance.clear();
+  });
 
+  group('StreakService.markLessonComplete', () {
     test('first lesson ever: streak = 1', () async {
       final now = DateTime(2026, 6, 15);
-      final state = await StreakService.instance.markLessonComplete(now: now);
+      final state =
+          await StreakService.instance.markLessonComplete(now: now);
       expect(state.currentStreak, 1);
       expect(state.longestStreak, 1);
       expect(state.lastLessonDate, DateTime(2026, 6, 15));
@@ -64,11 +64,6 @@ void main() {
   });
 
   group('StreakService.grantFreezeToken', () {
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      await StreakService.instance.reset();
-    });
-
     test('caps at 3', () async {
       for (var i = 0; i < 5; i++) {
         await StreakService.instance.grantFreezeToken();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/puzzle.dart';
+import '../../services/analytics_service.dart';
 import '../../services/puzzle_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
@@ -47,6 +48,12 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
         _puzzle = p;
         _isLoading = false;
       });
+      if (p != null) {
+        unawaited(AnalyticsService.instance.track('puzzle_start', properties: {
+          'puzzle_id': p.id,
+          'day': widget.day,
+        }));
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -59,6 +66,11 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
   void _onTapSquare(String square) {
     if (_isShowingFeedback || _puzzle == null) return;
     final correct = square.toLowerCase() == _puzzle!.correctSquare.toLowerCase();
+    unawaited(AnalyticsService.instance.track('puzzle_answer', properties: {
+      'puzzle_id': _puzzle!.id,
+      'tapped': square,
+      'correct': correct,
+    }));
     setState(() {
       _tappedSquare = square;
       _isShowingFeedback = true;

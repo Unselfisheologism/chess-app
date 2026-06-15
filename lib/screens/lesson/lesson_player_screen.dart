@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../models/lesson.dart';
+import '../../services/analytics_service.dart';
 import '../../services/lesson_loader.dart';
 import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
@@ -49,6 +50,9 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
   }
 
   Future<void> _load() async {
+    unawaited(AnalyticsService.instance.track('lesson_start', properties: {
+      'day': widget.day,
+    }));
     try {
       final lesson = await _loader.load(widget.day);
       if (!mounted) return;
@@ -117,6 +121,11 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
       } else {
         // Lesson complete. Mark the streak (fire-and-forget; the
         // next read on the home screen will see the update).
+        unawaited(AnalyticsService.instance.track('lesson_complete', properties: {
+          'day': widget.day,
+          'score': _score,
+          'total': _lesson!.questions.length,
+        }));
         unawaited(StreakService.instance.markLessonComplete());
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(

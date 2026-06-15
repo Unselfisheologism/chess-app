@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/analytics_service.dart';
 import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
@@ -8,9 +9,9 @@ import 'play/match_screen.dart';
 import 'puzzle/daily_puzzle_screen.dart';
 import '../widgets/mascot.dart';
 
-/// Home screen. Shows the current day, the streak (read from
-/// [StreakService]), and a CTA card to start today's lesson.
-/// Daily puzzle (U8) and match (U7) cards are wired.
+/// Home screen. Shows the current day, the streak (with freeze
+/// tokens), the at-risk banner if today's lesson is overdue, and
+/// the CTA cards to start today's lesson / play / solve.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -25,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _streakFuture = StreakService.instance.read();
+    unawaited(AnalyticsService.instance.track('home_view'));
   }
 
   Future<void> _refreshStreak() async {
@@ -34,6 +36,18 @@ class _HomeScreenState extends State<HomeScreen> {
       _streakFuture = next;
     });
     await next;
+  }
+
+  /// True when the user has an active streak but hasn't completed
+  /// today's lesson yet. The at-risk banner shows this.
+  static bool _isStreakAtRisk(StreakState s) {
+    if (s.currentStreak == 0) return false;
+    final last = s.lastLessonDate;
+    if (last == null) return true;
+    final now = DateTime.now();
+    return !(last.year == now.year &&
+        last.month == now.month &&
+        last.day == now.day);
   }
 
   @override
@@ -46,43 +60,80 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'chess-do-it',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  FutureBuilder<StreakState>(
-                    future: _streakFuture,
-                    builder: (context, snap) {
-                      final streak = snap.data?.currentStreak ?? 0;
-                      return Row(
+              FutureBuilder<StreakState>(
+                future: _streakFuture,
+                builder: (context, snap) {
+                  final state = snap.data ?? StreakState.empty;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'chess-do-it',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      Row(
                         children: [
-                          const Icon(
-                            Icons.local_fire_department,
-                            color: BrandColors.gold,
-                            size: 24,
+                          _StreakChip(
+                            icon: Icons.local_fire_department,
+                            value: state.currentStreak,
+                            label: state.currentStreak == 1 ? 'day' : 'days',
                           ),
-                          const SizedBox(width: AppSpacing.xs),
-                          Text(
-                            '$streak',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(color: BrandColors.gold),
+                          const SizedBox(width: AppSpacing.s),
+                          _StreakChip(
+                            icon: Icons.ac_unit,
+                            value: state.freezeTokens,
+                            label: state.freezeTokens == 1 ? 'freeze' : 'freezes',
                           ),
                         ],
-                      );
-                    },
-                  ),
-                ],
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: AppSpacing.m),
               const Center(
                 child: Mascot(mood: MascotMood.idle, size: 120),
               ),
-              const SizedBox(height: AppSpacing.l),
+              const SizedBox(height: AppSpacing.m),
+              FutureBuilder<StreakState>(
+                future: _streakFuture,
+                builder: (context, snap) {
+                  final state = snap.data ?? StreakState.empty;
+                  if (!_isStreakAtRisk(state)) {
+                    return const SizedBox.shrink();
+                  }
+                  return Container(
+                    padding: const EdgeInsets.all(AppSpacing.m),
+                    decoration: BoxDecoration(
+                      color: BrandColors.error.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(AppSpacing.m),
+                      border: Border.all(
+                        color: BrandColors.error.withOpacity(0.4),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: BrandColors.error,
+                        ),
+                        const SizedBox(width: AppSpacing.s),
+                        Expanded(
+                          child: Text(
+                            "Streak at risk — finish today's lesson to keep it",
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: BrandColors.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.m),
               Text(
                 "Today's lesson",
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -134,15 +185,61 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: AppSpacing.s),
-              Text(
-                'Complete a lesson to keep your streak alive.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
+              FutureBuilder<StreakState>(
+                future: _streakFuture,
+                builder: (context, snap) {
+                  final state = snap.data ?? StreakState.empty;
+                  if (state.longestStreak <= 1) {
+                    return Text(
+                      'Complete a lesson to keep your streak alive.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    );
+                  }
+                  return Text(
+                    'Best streak: ${state.longestStreak} days · '
+                    '${state.totalLessonsCompleted} lessons completed',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: BrandColors.lockedGrey,
+                    ),
+                  );
+                },
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _StreakChip extends StatelessWidget {
+  final IconData icon;
+  final int value;
+  final String label;
+
+  const _StreakChip({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: BrandColors.gold, size: 20),
+        const SizedBox(width: AppSpacing.xs),
+        Text(
+          '$value',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: BrandColors.deepInk,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+      ],
     );
   }
 }
@@ -276,9 +373,6 @@ class _SecondaryCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      // Explicit color — don't rely on the theme's
-                      // default text color (which is white in dark
-                      // mode, invisible on this white card).
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
