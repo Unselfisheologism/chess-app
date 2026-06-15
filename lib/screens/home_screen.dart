@@ -276,6 +276,9 @@ class _SecondaryCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
+                      // Explicit color — don't rely on the theme's
+                      // default text color (which is white in dark
+                      // mode, invisible on this white card).
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -286,7 +289,7 @@ class _SecondaryCard extends StatelessWidget {
                       subtitle,
                       style: const TextStyle(
                         fontSize: 11,
-                        color: BrandColors.lockedGrey,
+                        color: BrandColors.deepInk,
                       ),
                     ),
                   ],
