@@ -63,6 +63,12 @@ android {
             def keystorePropertiesFile = rootProject.file("keystore.properties")
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
+            } else {
+                // Fallback for CI builds without secrets (chess-do-it fork
+                // does not yet have the signing secrets configured).
+                // Real production builds will use the signingConfigs.release
+                // path above once secrets are added to the repo.
+                signingConfig signingConfigs.debug
             }
         }
         debug {
