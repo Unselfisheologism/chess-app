@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Background for the adaptive icon. Solid dark — the foreground
+  (the split man-wen logo) is self-contained, so we use a single
+  matte dark color to match the ink side of the split and stay
+  on-brand with the rest of the app's editorial palette.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#1A1A1A" />
+</shape>

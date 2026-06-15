@@ -1,0 +1,167 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "kotlin-kapt"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace "com.unselfisheologism.chess_do_it"
+    compileSdk 34
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_11
+    }
+
+    lintOptions {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+    defaultConfig {
+        applicationId "com.unselfisheologism.chess_do_it"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+        ndk { abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64" }
+    }
+
+    signingConfigs {
+        release {
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            if (keystorePropertiesFile.exists()) {
+                def keystoreProperties = new Properties()
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                def storeFilePath = keystoreProperties.getProperty('storeFile')
+                def storePasswordVal = keystoreProperties.getProperty('storePassword')
+                def keyAliasVal = keystoreProperties.getProperty('keyAlias')
+                def keyPasswordVal = keystoreProperties.getProperty('keyPassword')
+                if (storeFilePath != null && storeFilePath.trim() != '' &&
+                    storePasswordVal != null && storePasswordVal.trim() != '' &&
+                    keyAliasVal != null && keyAliasVal.trim() != '' &&
+                    keyPasswordVal != null && keyPasswordVal.trim() != '') {
+                    storeFile file(storeFilePath)
+                    storePassword(storePasswordVal)
+                    keyAlias(keyAliasVal)
+                    keyPassword(keyPasswordVal)
+                }
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+        }
+        debug {
+            minifyEnabled false
+            debuggable true
+        }
+    }
+
+    // Adding flutter.jar from the SDK cache back to the runtime classpath
+    // (see the `dependencies` block below) also re-pulls its bundled
+    // `lib/<abi>/libflutter.so`. The Flutter Gradle plugin ALSO ships
+    // `libflutter.so` via its own packaging, so debug builds end up with
+    // two copies of the same .so and AGP fails the build with
+    // `DuplicateRelativeFileException: 2 files found with path
+    // 'lib/armeabi-v7a/libflutter.so'`. `pickFirsts` tells AGP to keep
+    // one copy (the first one encountered) and drop the rest. Release
+    // builds happen to dedupe this themselves; this mainly fixes debug.
+    packagingOptions {
+        jniLibs {
+            pickFirsts += "lib/*/libflutter.so"
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+// Add Flutter engine classes from SDK cache (avoids AGP class pollution from Maven AAR)
+def getFlutterEngineDir() {
+    try {
+        String sdk = null
+        // 1. Try local.properties
+        def localProps = rootProject.file("local.properties")
+        if (localProps.exists()) {
+            def props = new Properties()
+            localProps.withInputStream { props.load(it) }
+            sdk = props.getProperty("flutter.sdk")
+        }
+        // 2. Fall back to FLUTTER_ROOT env var
+        if (sdk == null && System.env.FLUTTER_ROOT != null) {
+            sdk = System.env.FLUTTER_ROOT
+        }
+        if (sdk == null) return null
+        def dir = file("$sdk/bin/cache/artifacts/engine/android-arm-release")
+        if (!dir.exists()) dir = file("$sdk/bin/cache/artifacts/engine/android-arm")
+        if (!dir.exists()) return null
+        return dir
+    } catch (Exception ignored) { return null }
+}
+
+def flutterEngineDir = getFlutterEngineDir()
+
+ dependencies {
+     // Room
+     implementation "androidx.room:room-runtime:2.6.1"
+     implementation "androidx.room:room-ktx:2.6.1"
+     kapt "androidx.room:room-compiler:2.6.1"
+
+     // DataStore
+     implementation "androidx.datastore:datastore-preferences:1.0.0"
+
+     // Billing
+     implementation "com.android.billingclient:billing:6.0.1"
+
+     // Biometrics
+     implementation "androidx.biometric:biometric:1.1.0"
+
+     // Activity KTX
+     implementation "androidx.activity:activity-ktx:1.7.2"
+
+     // Fragment (needed for FragmentActivity)
+     implementation "androidx.fragment:fragment-ktx:1.6.2"
+
+     // Material Design
+     implementation "com.google.android.material:material:1.12.0"
+
+     // Core AndroidX libraries
+     implementation "androidx.core:core-ktx:1.13.1"
+     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.4"
+
+     // androidx.window — REQUIRED by the Flutter engine (ViewUtils.calculateMaximumDisplayMetrics
+     // uses WindowMetricsCalculator on API 30+). Normally pulled transitively via the
+     // engine AAR, but this project loads the engine from a local flutter.jar, so we
+     // must add it explicitly. Without it: app launches, FlutterActivity loads fine,
+     // then onCreate -> setUpFlutterEngine -> FlutterEngine.<init> -> ViewUtils throws
+     // NoClassDefFoundError on androidx/window/layout/WindowMetricsCalculator.
+     implementation "androidx.window:window:1.2.0"
+
+     // Flutter engine classes from SDK cache (avoids AGP class pollution from Maven AAR).
+     // MUST stay on the runtime classpath (`implementation`, not `compileOnly`) for this
+     // project's old-style Flutter Gradle plugin setup (`flutter { source = "../.." }`
+     // in build.gradle). The new-style `id("dev.flutter.flutter-gradle-plugin")` plugin
+     // auto-pulls the engine AAR, so `compileOnly` would be safe under it — but under
+     // the old plugin, no engine AAR is added, and removing flutter.jar from the
+     // runtime classpath drops io.flutter.embedding.android.FlutterActivity out of the
+     // APK, crashing the app on launch with
+     // `ClassNotFoundException: io.flutter.embedding.android.FlutterActivity`.
+     if (flutterEngineDir != null && flutterEngineDir.exists()) {
+         implementation files("$flutterEngineDir/flutter.jar")
+     }
+ }

@@ -1,4 +1,4 @@
-# Chess App — Learn chess, unlock your phone
+# Chess Do It — Learn chess, unlock your phone
 
 A daily chess learning app that locks social media until you complete today's lesson. Built with Flutter. iOS first, Android second.
 
@@ -11,11 +11,11 @@ A daily chess learning app that locks social media until you complete today's le
 - **Stockfish-powered play** — offline chess engine, 600 → 3000 ELO difficulty
 - **Social media lock** — iOS Screen Time API (Family Controls) blocks your chosen apps until today's lesson is done
 - **Streaks + freeze tokens** — daily streak; play a match to earn a streak-freeze token
-- **Free tier** — first 3 lessons free; subscription unlocks everything
+- **3-day free trial** — first 3 days on us, then **$5.99/mo** or **$39.99/yr**
 
 ## Stack
 
-Flutter 3.22 / Dart 3.4 · `stockfish_for_flutter` (Dart FFI) · `flutter_family_controls` (iOS Screen Time) · `lottie` · `purchases_flutter` (RevenueCat)
+Flutter 3.22 / Dart 3.4 · `stockfish_for_flutter` (Dart FFI) · `flutter_family_controls` (iOS Screen Time) · `lottie` · `purchases_flutter` (RevenueCat) · `chess` (pure-Dart position model)
 
 ## Run
 

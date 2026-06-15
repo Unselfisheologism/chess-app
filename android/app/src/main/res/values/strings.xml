@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Man Wen</string>
+    <string name="accessibility_service_description">Real-time content protection that detects inappropriate content and helps you stay on track.</string>
+</resources>

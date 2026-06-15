@@ -1,0 +1,49 @@
+pluginManagement {
+    def flutterSdkPath = {
+        // 1. Try local.properties (developer machine + flutter-action's `flutter pub get`)
+        def localProps = file("local.properties")
+        if (localProps.exists()) {
+            def properties = new Properties()
+            localProps.withInputStream { properties.load(it) }
+            def sdk = properties.getProperty("flutter.sdk")
+            if (sdk != null) return sdk
+        }
+        // 2. Fall back to FLUTTER_ROOT env var (set by subosito/flutter-action)
+        if (System.env.FLUTTER_ROOT != null && System.env.FLUTTER_ROOT.trim() != '') {
+            return System.env.FLUTTER_ROOT
+        }
+        // 3. Last resort: resolve from `flutter` on PATH
+        try {
+            def flutterBin = ["sh", "-c", "command -v flutter"].execute().text.trim()
+            if (flutterBin) {
+                return new File(flutterBin).parentFile.parentFile.absolutePath
+            }
+        } catch (Exception ignored) {}
+        throw new GradleException(
+            "flutter.sdk not found. Set flutter.sdk in android/local.properties, " +
+            "or FLUTTER_ROOT env var, or add flutter to PATH."
+        )
+    }()
+
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+}
+
+// NOTE: Flutter 3.22's flutter.groovy references com.android.build.OutputFile,
+// which was removed in AGP 8.0. The patch is applied in CI by
+// scripts/patch-flutter-sdk.sh before gradle runs, which:
+//   1. sed-replaces the import + usage in the Flutter SDK's flutter.groovy
+//   2. clears the gradle compile cache so the patched source is recompiled
+// For local builds: run `bash scripts/patch-flutter-sdk.sh` before `flutter build apk`.
+
+rootProject.name = 'ManWen'
+include ':app'

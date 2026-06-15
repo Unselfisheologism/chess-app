@@ -1,0 +1,45 @@
+name: chess_do_it
+description: Learn chess, unlock your phone. Daily micro-lessons with social media lock.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Pinned to 2.2.x — 2.3.0+ requires Dart 3.5+, but project is on Dart 3.4 (Flutter 3.22).
+  shared_preferences: '>=2.2.0 <2.3.0'
+
+  # State management
+  provider: ^6.1.1
+
+  # Chess
+  chess: ^0.7.0
+  stockfish_for_flutter: ^1.0.0
+
+  # iOS Screen Time API (iOS 15+)
+  flutter_family_controls: ^0.0.3
+
+  # Animations — pinned to 2.x to avoid Color.toARGB32 (Flutter 3.27+ API).
+  # Bump lottie to ^3.x once project upgrades to Flutter 3.27+.
+  lottie: '>=2.0.0 <3.0.0'
+
+  # Subscriptions (RevenueCat)
+  purchases_flutter: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/lottie/
+    - assets/lessons/
+    - assets/puzzles/
