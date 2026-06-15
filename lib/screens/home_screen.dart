@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
-import '../lesson/lesson_player_screen.dart';
-import '../play/match_screen.dart';
-import '../puzzle/daily_puzzle_screen.dart';
+import 'lesson/lesson_player_screen.dart';
+import 'play/match_screen.dart';
+import 'puzzle/daily_puzzle_screen.dart';
 import '../widgets/mascot.dart';
 
 /// Home screen. Shows the current day, the streak (read from
