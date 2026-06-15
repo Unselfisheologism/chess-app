@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: _SecondaryCard(
                       icon: Icons.smart_toy,
-                      title: 'Play Stockfish',
+                      title: 'Play chessito AI',
                       subtitle: 'Needs internet',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(

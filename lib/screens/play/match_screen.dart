@@ -29,7 +29,7 @@ class MatchScreen extends StatefulWidget {
 class _MatchScreenState extends State<MatchScreen> {
   final _service = StockfishService();
   Map<String, String> _position = Map<String, String>.from(_kInitialPosition);
-  String _status = 'Press "Ask Stockfish" to start. Needs internet.';
+  String _status = 'Press "Ask chessito AI" to start. Needs internet.';
   bool _isThinking = false;
   int _moveCount = 0;
   String? _lastMove;
@@ -45,7 +45,7 @@ class _MatchScreenState extends State<MatchScreen> {
     if (_isThinking) return;
     setState(() {
       _isThinking = true;
-      _status = 'Asking Stockfish (via Lichess cloud-eval)...';
+      _status = 'Asking chessito AI...';
     });
     try {
       final fen = _toFen(_position);
@@ -57,7 +57,7 @@ class _MatchScreenState extends State<MatchScreen> {
         _lastMove = eval.bestMove;
         _lastEval = eval;
         _isThinking = false;
-        _status = 'Stockfish played: ${eval.bestMove} '
+        _status = 'chessito AI played: ${eval.bestMove} '
             '(depth ${eval.depth}, eval ${eval.evalSummary})';
       });
     } on StockfishException catch (e) {
@@ -91,7 +91,7 @@ class _MatchScreenState extends State<MatchScreen> {
       backgroundColor: BrandColors.cream,
       appBar: AppBar(
         title: Text(
-          'Play Stockfish',
+          'Play chessito AI',
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         backgroundColor: BrandColors.cream,
@@ -157,7 +157,7 @@ class _MatchScreenState extends State<MatchScreen> {
                             )
                           : const Icon(Icons.smart_toy, color: BrandColors.deepInk),
                       label: Text(
-                        _isThinking ? 'Thinking...' : 'Ask Stockfish',
+                        _isThinking ? 'Thinking...' : 'Ask chessito AI',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: BrandColors.deepInk,
                               fontWeight: FontWeight.w700,

@@ -42,7 +42,7 @@ class StockfishException implements Exception {
   String toString() => 'StockfishException: $message';
 }
 
-/// Stockfish integration via the lichess cloud-eval API.
+/// chessito AI integration via the lichess cloud-eval API.
 ///
 /// Why lichess: a local Stockfish binary would need to be compiled
 /// for the device's CPU arch, bundled in the APK (~30MB), extracted
@@ -57,6 +57,9 @@ class StockfishException implements Exception {
 /// rate limits (anonymous: 20 reqs/sec, burst 80). For an MVP chess
 /// app this is plenty.
 ///
+/// Branded in-app as "chessito AI" — the user doesn't see
+/// "Stockfish" or "Lichess" anywhere.
+///
 /// Endpoint docs: https://lichess.org/api#tag/Analysis
 class StockfishService {
   static const _apiBase = 'https://lichess.org/api/cloud-eval';
@@ -66,7 +69,7 @@ class StockfishService {
   StockfishService({http.Client? client})
       : _client = client ?? http.Client();
 
-  /// Asks Stockfish (via lichess) for the best move from [fen].
+  /// Asks chessito AI (via lichess) for the best move from [fen].
   /// Throws [StockfishException] on network error, 404 (position
   /// not in cache), 429 (rate limited), or malformed response.
   Future<StockfishEvaluation> getBestMove(String fen) async {
@@ -79,26 +82,26 @@ class StockfishService {
     try {
       response = await _client.get(uri).timeout(const Duration(seconds: 15));
     } on TimeoutException {
-      throw StockfishException('Lichess API timed out after 15s');
+      throw StockfishException('chessito AI timed out after 15s');
     } catch (e) {
       throw StockfishException('Network error: $e');
     }
 
     if (response.statusCode == 404) {
       throw StockfishException(
-        'Position not in Lichess cache — try a more common opening or a position reached by standard play',
+        'Position not in chessito AI cache — try a more common opening or a position reached by standard play',
         statusCode: 404,
       );
     }
     if (response.statusCode == 429) {
       throw StockfishException(
-        'Rate limited by Lichess — wait a moment and try again',
+        'Rate limited — wait a moment and try again',
         statusCode: 429,
       );
     }
     if (response.statusCode != 200) {
       throw StockfishException(
-        'Lichess API returned ${response.statusCode}',
+        'chessito AI returned ${response.statusCode}',
         statusCode: response.statusCode,
       );
     }
@@ -107,7 +110,7 @@ class StockfishService {
     try {
       json = jsonDecode(response.body) as Map<String, dynamic>;
     } catch (e) {
-      throw StockfishException('Malformed Lichess response: $e');
+      throw StockfishException('Malformed response: $e');
     }
 
     final pvs = json['pvs'] as List<dynamic>?;
