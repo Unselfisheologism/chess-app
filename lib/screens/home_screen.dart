@@ -4,6 +4,7 @@ import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 import '../lesson/lesson_player_screen.dart';
+import '../play/match_screen.dart';
 import '../widgets/mascot.dart';
 
 /// Home screen. Shows the current day, the streak (read from
@@ -103,10 +104,99 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const Spacer(),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SecondaryCard(
+                      icon: Icons.extension,
+                      title: 'Daily puzzle',
+                      subtitle: 'U8',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Daily puzzle lands in U8 (next push).'),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s),
+                  Expanded(
+                    child: _SecondaryCard(
+                      icon: Icons.smart_toy,
+                      title: 'Play Stockfish',
+                      subtitle: 'Tap to play',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const MatchScreen(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s),
               Text(
                 'Complete a lesson to keep your streak alive.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SecondaryCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppSpacing.m),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.m),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          child: Row(
+            children: [
+              Icon(icon, color: BrandColors.deepInk, size: 24),
+              const SizedBox(width: AppSpacing.s),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: BrandColors.deepInk,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: BrandColors.lockedGrey,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
