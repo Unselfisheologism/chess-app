@@ -59,7 +59,7 @@ class CompletionScreen extends StatelessWidget {
                 ),
                 child: Text(
                   'Back to home',
-                  style: Theme.of(context).textTheme.h2,
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ),
             ],

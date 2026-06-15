@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/brand.dart';
+import '../../theme/spacing.dart';
+import '../../widgets/chess_board.dart';
+
 /// Unicode chess piece symbols. White side uses the outlined set,
 /// black side uses the filled set — this is the standard convention.
 const _whitePieceSymbol = <String, String>{
@@ -65,7 +69,7 @@ class ChessBoard extends StatelessWidget {
             if (isSelected) {
               squareColor = _selectedHighlight;
             } else if (isHighlighted) {
-              squareColor = _selectedHighlight.withValues(alpha: 0.5);
+              squareColor = _selectedHighlight.withOpacity(0.5);
             } else if (isLightSquare) {
               squareColor = _lightSquare;
             } else {

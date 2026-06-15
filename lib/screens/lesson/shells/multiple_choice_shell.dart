@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../models/lesson.dart';
-import '../../theme/brand.dart';
-import '../../theme/spacing.dart';
-import '../../widgets/chess_board.dart';
+import '../../../models/lesson.dart';
+import '../../../theme/brand.dart';
+import '../../../theme/spacing.dart';
+import '../../../widgets/chess_board.dart';
 
 /// Multiple-choice shell. Shows the prompt, then 4 option buttons
 /// in a vertical column. Tapping an option submits the answer; the

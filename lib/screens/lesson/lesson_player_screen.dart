@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../models/lesson.dart';
-import '../../services/lesson_loader.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/feedback_overlay.dart';
@@ -99,14 +98,12 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
       case LessonShellType.dragPiece:
       case LessonShellType.makeBestMove:
       case LessonShellType.readPosition:
-        // Not implemented in U3; treat as not-validated.
         return false;
     }
   }
 
   void _dismissFeedback() {
     if (_isShowingFeedback && _hasLockedAnswer) {
-      // Advance to next question (or finish).
       if (_currentIndex + 1 < _lesson!.questions.length) {
         setState(() {
           _currentIndex++;
@@ -114,7 +111,6 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
           _attemptsThisQuestion = 0;
         });
       } else {
-        // Lesson complete.
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => CompletionScreen(
@@ -126,7 +122,6 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
         );
       }
     } else {
-      // 1st wrong answer: dismiss feedback, allow another attempt.
       setState(() {
         _isShowingFeedback = false;
       });
@@ -153,7 +148,10 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(lesson.title, style: Theme.of(context).textTheme.h2),
+        title: Text(
+          lesson.title,
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
         backgroundColor: BrandColors.cream,
         elevation: 0,
       ),
@@ -182,9 +180,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
             FeedbackOverlay(
               kind: _lastWasCorrect
                   ? FeedbackKind.correct
-                  : (_hasLockedAnswer
-                      ? FeedbackKind.wrong
-                      : FeedbackKind.wrong),
+                  : FeedbackKind.wrong,
               explanation: _lastExplanation,
               onDismiss: _dismissFeedback,
             ),

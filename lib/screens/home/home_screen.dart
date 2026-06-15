@@ -26,7 +26,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text(
                     'chess-do-it',
-                    style: Theme.of(context).textTheme.h2,
+                    style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   Row(
                     children: [
@@ -38,7 +38,7 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         '0',
-                        style: Theme.of(context).textTheme.h2?.copyWith(
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               color: BrandColors.gold,
                             ),
                       ),
@@ -80,7 +80,7 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'Complete a lesson to keep your streak alive.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.caption,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
           ),
@@ -145,10 +145,10 @@ class _LessonCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                '~$min minutes',
+                '~$minutes minutes',
                 style: TextStyle(
                   fontSize: 14,
-                  color: BrandColors.cream.withValues(alpha: 0.7),
+                  color: BrandColors.cream.withOpacity(0.7),
                 ),
               ),
               const SizedBox(height: AppSpacing.l),

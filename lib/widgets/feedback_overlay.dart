@@ -27,7 +27,7 @@ class FeedbackOverlay extends StatelessWidget {
     final label = isCorrect ? 'Correct!' : 'Not quite';
 
     return Material(
-      color: color.withValues(alpha: 0.95),
+      color: color.withOpacity(0.95),
       child: InkWell(
         onTap: onDismiss,
         child: SafeArea(
