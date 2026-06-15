@@ -12,21 +12,29 @@ dependencies:
   cupertino_icons: ^1.0.6
 
   # Pinned to 2.2.x — 2.3.0+ requires Dart 3.5+, but project is on Dart 3.4 (Flutter 3.22).
+  # See the custom Android plugin at android/app/src/main/java/io/flutter/plugins/
+  # which implements the legacy MethodChannel (pre-Pigeon) directly.
   shared_preferences: '>=2.2.0 <2.3.0'
 
   # State management
   provider: ^6.1.1
 
-  # Chess engine — using stockfish_flutter_plus because the older stockfish_for_flutter
-  # (0.1.2) declares SDK <3.0.0 and won't resolve on Dart 3.4.
-  stockfish_flutter_plus: ^1.0.1
-
   # Animations — pinned to 2.7.0 (last 2.x release). Lottie 3.x requires Flutter 3.27+
   # because it adopted Color.toARGB32. Bump lottie to ^3.x once project upgrades Flutter.
   lottie: '>=2.7.0 <3.0.0'
 
-  # Subscriptions (RevenueCat) — SDK 3.4.0+ matches our Dart 3.4.
-  purchases_flutter: ^10.0.0
+# Force the *native* side to the same pre-Pigeon, pre-Dart-3.5
+# version. Pinning just `shared_preferences` above is not enough
+# because `shared_preferences_android` is a separate package
+# pulled in transitively, and its own constraint allows 2.5+ (the
+# Pigeon version). dependency_overrides forces the resolver to
+# pick these exact versions regardless of what transitive
+# constraints say.
+dependency_overrides:
+  shared_preferences: '>=2.2.0 <2.3.0'
+  shared_preferences_android: '>=2.2.0 <2.3.0'
+  shared_preferences_foundation: '>=2.2.0 <2.3.0'  # macOS / iOS
+  shared_preferences_web: '>=2.2.0 <2.3.0'         # web
 
 dev_dependencies:
   flutter_test:
