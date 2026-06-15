@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../lesson/lesson_player_screen.dart';
 import '../theme/brand.dart';
 import '../theme/spacing.dart';
 import '../widgets/mascot.dart';
-import 'home/home_screen.dart';
 
 /// Home screen. Shows the current day, the streak (read from
 /// StreakService via a [FutureBuilder] for now), and a CTA card to
@@ -66,7 +66,7 @@ class HomeScreen extends StatelessWidget {
                 minutes: 8,
                 onStart: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const HomeScreen(), // placeholder
+                    builder: (_) => const LessonPlayerScreen(day: 1),
                   ),
                 ),
               ),

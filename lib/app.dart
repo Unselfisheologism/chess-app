@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'screens/home/home_screen.dart';
+import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 
 class ChessDoItApp extends StatelessWidget {
