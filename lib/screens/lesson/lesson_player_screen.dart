@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../models/lesson.dart';
 import '../../services/lesson_loader.dart';
+import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/feedback_overlay.dart';
@@ -112,6 +115,9 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
           _attemptsThisQuestion = 0;
         });
       } else {
+        // Lesson complete. Mark the streak (fire-and-forget; the
+        // next read on the home screen will see the update).
+        unawaited(StreakService.instance.markLessonComplete());
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => CompletionScreen(

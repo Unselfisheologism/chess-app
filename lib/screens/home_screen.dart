@@ -1,16 +1,38 @@
 import 'package:flutter/material.dart';
 
+import '../../services/streak_service.dart';
+import '../../theme/brand.dart';
+import '../../theme/spacing.dart';
 import '../lesson/lesson_player_screen.dart';
-import '../theme/brand.dart';
-import '../theme/spacing.dart';
 import '../widgets/mascot.dart';
 
 /// Home screen. Shows the current day, the streak (read from
-/// StreakService via a [FutureBuilder] for now), and a CTA card to
-/// start today's lesson. Daily puzzle and match are placeholders
-/// until U7/U8.
-class HomeScreen extends StatelessWidget {
+/// [StreakService]), and a CTA card to start today's lesson.
+/// Daily puzzle (U8) and match (U7) cards are placeholders.
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Future<StreakState>? _streakFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _streakFuture = StreakService.instance.read();
+  }
+
+  Future<void> _refreshStreak() async {
+    final next = StreakService.instance.read();
+    if (!mounted) return;
+    setState(() {
+      _streakFuture = next;
+    });
+    await next;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,22 +51,28 @@ class HomeScreen extends StatelessWidget {
                     'chess-do-it',
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.local_fire_department,
-                        color: BrandColors.gold,
-                        size: 24,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        '0',
-                        style:
-                            Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  color: BrandColors.gold,
-                                ),
-                      ),
-                    ],
+                  FutureBuilder<StreakState>(
+                    future: _streakFuture,
+                    builder: (context, snap) {
+                      final streak = snap.data?.currentStreak ?? 0;
+                      return Row(
+                        children: [
+                          const Icon(
+                            Icons.local_fire_department,
+                            color: BrandColors.gold,
+                            size: 24,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            '$streak',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(color: BrandColors.gold),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -64,11 +92,15 @@ class HomeScreen extends StatelessWidget {
                 day: 1,
                 title: 'Knight Moves',
                 minutes: 8,
-                onStart: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const LessonPlayerScreen(day: 1),
-                  ),
-                ),
+                onStart: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const LessonPlayerScreen(day: 1),
+                    ),
+                  );
+                  // Lesson finished (or popped back); refresh the streak.
+                  await _refreshStreak();
+                },
               ),
               const Spacer(),
               Text(
