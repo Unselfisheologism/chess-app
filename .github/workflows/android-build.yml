@@ -57,13 +57,26 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/keystore.jks
-          cat > keystore.properties << EOF
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Using configured signing secrets"
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/keystore.jks
+            cat > keystore.properties << EOF
           storeFile=keystore.jks
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyAlias=$ANDROID_KEY_ALIAS
           keyPassword=$ANDROID_KEY_PASSWORD
           EOF
+          else
+            echo "No signing secrets configured; generating debug keystore at ~/.android/debug.keystore"
+            mkdir -p ~/.android
+            keytool -genkey -v -keystore ~/.android/debug.keystore \
+              -alias androiddebugkey -storepass android -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US" 2>&1 | tail -3
+            # Leave keystore.properties absent so build.gradle's else-branch
+            # picks up the debug keystore at the expected path.
+            rm -f keystore.properties
+          fi
 
       - name: Make Gradlew Executable
         run: chmod +x android/gradlew
