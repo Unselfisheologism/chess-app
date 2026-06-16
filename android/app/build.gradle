@@ -110,16 +110,6 @@ flutter {
     source = "../.."
 }
 
-afterEvaluate {
-    // DIAGNOSTIC: print whether the Flutter Gradle plugin is
-    // actually reading the dart-defines property. This is the
-    // single most common reason the LLM key fails to reach the
-    // compiled Dart code. Will be removed once the build is
-    // verified end-to-end.
-    def dd = project.findProperty('dart-defines')
-    println '=== DIAGNOSTIC: dart-defines property value (length=' + (dd == null ? 0 : dd.length()) + '): ' + (dd == null ? 'NULL' : dd.take(80) + (dd.length() > 80 ? '...' : ''))
-}
-
 // Add Flutter engine classes from SDK cache (avoids AGP class pollution from Maven AAR)
 def getFlutterEngineDir() {
     try {
