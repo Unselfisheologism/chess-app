@@ -76,7 +76,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
       // In-memory lesson (e.g. LLM-generated). No async load.
       unawaited(AnalyticsService.instance.track('lesson_start', properties: {
         'day': widget.lesson!.day,
-        'source': 'bytez',
+        'source': 'bundled',
         'lesson_id': widget.lesson!.id,
       }));
       if (!mounted) return;
@@ -176,7 +176,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
         final completedDay = _lesson!.day;
         unawaited(AnalyticsService.instance.track('lesson_complete', properties: {
           'day': completedDay,
-          'source': widget.lesson != null ? 'bytez' : 'bundled',
+          'source': widget.lesson != null ? 'in-memory' : 'bundled',
           'lesson_id': _lesson!.id,
           'score': _score,
           'total': _lesson!.questions.length,

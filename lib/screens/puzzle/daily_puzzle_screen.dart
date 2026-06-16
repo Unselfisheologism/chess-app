@@ -1,39 +1,26 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import '../../models/puzzle.dart';
 import '../../services/analytics_service.dart';
-import '../../services/bytez_service.dart';
-import '../../services/streak_service.dart';
+import '../../services/puzzle_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/chess_board.dart';
 import '../../widgets/feedback_overlay.dart';
 import '../../widgets/mascot.dart';
 
-/// Daily puzzle screen. On open, auto-generates a fresh puzzle via
-/// the Bytez LLM, tailored to the user's current lesson count. The
-/// user never types to the LLM — the page is content-first, not a
-/// chat interface.
+/// Daily puzzle screen. Loads today's puzzle from the bundled set
+/// (selected by day index from [PuzzleService]). Shows the position
+/// + prompt, and asks the user to tap the destination square of the
+/// correct move.
 ///
-/// Loading flow:
-///   1. Fetch user's streak (for lesson count -> difficulty).
-///   2. Call BytezService.generatePuzzle with the current day index.
-///   3. On transient error (network / 5xx / 429), auto-retry with
-///      exponential backoff (handled inside BytezService).
-///   4. On hard error (auth / format / config), show a "Try again"
-///      button — the user is in control of the final retry. No
-///      silent fallback to a bundled puzzle; per the chess-do-it
-///      design, the daily puzzle IS the LLM.
-///
-/// Once loaded, this page is identical in UX to the original
-/// bundled-puzzle flow: prompt + board + tap-a-square.
+/// Feedback is the same green/red overlay used by lessons. After the
+/// first correct answer, the user can see the explanation.
 class DailyPuzzleScreen extends StatefulWidget {
-  /// The current day-of-launch index. Used to seed the puzzle theme
-  /// so consecutive days get different tactics. If null, derived
-  /// from the user's streak (lessons completed + 1).
+  /// The current day-of-launch index. When null, falls back to 1
+  /// (the first puzzle in the bundle).
   final int? day;
 
   const DailyPuzzleScreen({super.key, this.day});
@@ -43,28 +30,11 @@ class DailyPuzzleScreen extends StatefulWidget {
 }
 
 class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
-  final _bytez = BytezService();
+  final _service = PuzzleService();
 
   Puzzle? _puzzle;
   bool _isLoading = true;
-  // True when the underlying error is recoverable (network /
-  // timeout / 5xx / 429) so the user sees a "Retrying..."
-  // indicator and a final "Try again" button. False for hard
-  // errors (auth, format) where retrying with the same key is
-  // pointless.
-  bool _autoRetrying = false;
-  // Number of automatic retry attempts the user has watched. Shown
-  // in the loading UI so the user knows the app is doing something
-  // and not silently failing.
-  int _attemptCount = 0;
-  // User-friendly error message, displayed in big text.
   String? _error;
-  // Raw exception text, displayed in small monospace text below
-  // the friendly message. Always set when [_error] is set. The
-  // "Copy error" button puts this on the clipboard so the user
-  // can paste it to support when reporting a problem.
-  String? _errorDetail;
-  bool _isErrorRecoverable = true;
 
   String? _tappedSquare;
   bool _isShowingFeedback = false;
@@ -82,133 +52,31 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
     _load();
   }
 
-  @override
-  void dispose() {
-    _bytez.close();
-    super.dispose();
-  }
-
   Future<void> _load() async {
     setState(() {
       _isLoading = true;
       _error = null;
-      _autoRetrying = true;
-      _attemptCount++;
     });
-
-    int day;
-    int userLevel;
     try {
-      final streak = await StreakService.instance.read();
-      day = widget.day ?? (streak.totalLessonsCompleted + 1);
-      userLevel = streak.totalLessonsCompleted;
-    } catch (_) {
-      // If streak read fails, default to day 1 / beginner.
-      day = widget.day ?? 1;
-      userLevel = 0;
-    }
-
-    try {
-      final puzzle = await _bytez.generatePuzzle(
-        day: day,
-        userLevel: userLevel,
-      );
+      final p = await _service.pickTodaysPuzzle(widget.day ?? 1);
       if (!mounted) return;
       setState(() {
-        _puzzle = puzzle;
+        _puzzle = p;
         _isLoading = false;
-        _autoRetrying = false;
-        _error = null;
       });
-      unawaited(AnalyticsService.instance.track(
-        'puzzle_generated',
-        properties: {
-          'puzzle_id': puzzle.id,
-          'day': day,
-          'attempts': _attemptCount,
-        },
-      ));
-    } on BytezAuthException catch (e) {
-      // Hard error. No auto-retry. Show the error and a "Try again"
-      // button so the user can re-attempt after fixing config.
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _autoRetrying = false;
-        _error = _humanError(e);
-        _errorDetail = e.toString();
-        _isErrorRecoverable = false;
-      });
-    } on BytezFormatException catch (e) {
-      // The model returned bad JSON / invalid board. One more shot
-      // with the same key MIGHT help, but more likely the model is
-      // confused. Show a "Try again" — user-triggered, not auto.
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _autoRetrying = false;
-        _error = _humanError(e);
-        _errorDetail = e.toString();
-        _isErrorRecoverable = true;
-      });
-    } on BytezException catch (e) {
-      // All attempts exhausted (network / timeout / 5xx / 429).
-      // Show a "Try again" button.
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _autoRetrying = false;
-        _error = _humanError(e);
-        _errorDetail = e.toString();
-        _isErrorRecoverable = true;
-      });
+      if (p != null) {
+        unawaited(AnalyticsService.instance.track('puzzle_start', properties: {
+          'puzzle_id': p.id,
+          'day': widget.day ?? 1,
+        }));
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
+        _error = 'Could not load puzzle: $e';
         _isLoading = false;
-        _autoRetrying = false;
-        _error = _humanError(e);
-        _errorDetail = e.toString();
-        _isErrorRecoverable = true;
       });
     }
-  }
-
-  /// One auto-retry round when the user taps "Try again".
-  void _userRetry() {
-    setState(() {
-      _attemptCount = 0;
-    });
-    unawaited(_load());
-  }
-
-  String _humanError(Object e) {
-    final msg = e.toString();
-    if (msg.contains('SocketException') ||
-        msg.contains('Failed host lookup') ||
-        msg.contains('Network is unreachable')) {
-      return 'You appear to be offline. Connect to the internet and try again.';
-    }
-    if (msg.contains('TimeoutException') || msg.contains('timed out')) {
-      return 'The LLM took too long to respond. Try again in a moment.';
-    }
-    if (msg.contains('401') || msg.contains('403')) {
-      return 'API key rejected. Rebuild the app with a valid BYTEZ_API_KEY.';
-    }
-    if (msg.contains('429')) {
-      return 'Rate limited. Wait a moment and try again.';
-    }
-    if (msg.contains('500') || msg.contains('502') || msg.contains('503')) {
-      return 'The LLM service is having trouble. Try again in a moment.';
-    }
-    if (msg.contains('Build with the secret configured') ||
-        msg.contains('not set in build')) {
-      return 'LLM is not configured in this build. Contact support.';
-    }
-    if (msg.contains('non-JSON') || msg.contains('not an object')) {
-      return 'The LLM returned an unexpected response. Try again.';
-    }
-    return 'Could not load puzzle.';
   }
 
   void _onTapSquare(String square) {
@@ -238,198 +106,18 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return _buildLoading(context);
-    if (_error != null) return _buildError(context);
-    if (_puzzle == null) {
-      // Defensive: should not happen (error path covers null).
-      return _buildError(context);
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    return _buildPuzzle(context, _puzzle!);
-  }
+    if (_error != null || _puzzle == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Puzzle')),
+        body: Center(child: Text(_error ?? 'No puzzles bundled yet.')),
+      );
+    }
 
-  Widget _buildLoading(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BrandColors.cream,
-      appBar: AppBar(
-        title: Text(
-          'Daily puzzle',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        backgroundColor: BrandColors.cream,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Mascot(mood: MascotMood.idle, size: 120),
-                const SizedBox(height: AppSpacing.l),
-                Text(
-                  _autoRetrying
-                      ? 'Cooking up today\'s puzzle...'
-                      : 'Loading...',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                if (_attemptCount > 1) ...[
-                  const SizedBox(height: AppSpacing.s),
-                  Text(
-                    'Attempt $_attemptCount',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: BrandColors.lockedGrey,
-                        ),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.l),
-                const SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(strokeWidth: 3),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+    final puzzle = _puzzle!;
 
-  Widget _buildError(BuildContext context) {
-    final detail = _errorDetail;
-    return Scaffold(
-      backgroundColor: BrandColors.cream,
-      appBar: AppBar(
-        title: Text(
-          'Daily puzzle',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        backgroundColor: BrandColors.cream,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Mascot(mood: MascotMood.idle, size: 100),
-                const SizedBox(height: AppSpacing.l),
-                Text(
-                  _error ?? 'Something went wrong.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                const SizedBox(height: AppSpacing.l),
-                ElevatedButton(
-                  onPressed: _userRetry,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BrandColors.gold,
-                    foregroundColor: BrandColors.deepInk,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xl,
-                      vertical: AppSpacing.l,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.m),
-                    ),
-                  ),
-                  child: Text(
-                    'Try again',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                ),
-                if (detail != null && detail.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.l),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.m),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppSpacing.m),
-                      border: Border.all(color: BrandColors.lockedGrey),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Error details',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: BrandColors.lockedGrey,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        SelectableText(
-                          detail,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                            color: BrandColors.deepInk,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        OutlinedButton.icon(
-                          onPressed: () => _copyError(context, detail),
-                          icon: const Icon(Icons.copy, size: 14),
-                          label: const Text(
-                            'Copy error',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: BrandColors.deepInk,
-                            side: const BorderSide(color: BrandColors.lockedGrey),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.m,
-                              vertical: 6,
-                            ),
-                            minimumSize: const Size(0, 32),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                if (!_isErrorRecoverable) ...[
-                  const SizedBox(height: AppSpacing.s),
-                  Text(
-                    'The LLM rejected the request. This is a build-time issue, not a network problem.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: BrandColors.lockedGrey,
-                        ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _copyError(BuildContext context, String detail) async {
-    // Clipboard.setData is in services.dart, but importing it just
-    // for this one call would be heavier than the inline
-    // implementation. The Clipboard API has been stable since
-    // Flutter 1.x.
-    // ignore: deprecated_member_use
-    await Clipboard.setData(ClipboardData(text: detail));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Error details copied to clipboard'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  Widget _buildPuzzle(BuildContext context, Puzzle puzzle) {
     return Scaffold(
       backgroundColor: BrandColors.cream,
       appBar: AppBar(

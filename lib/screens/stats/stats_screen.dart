@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../services/analytics_service.dart';
-import '../../services/bytez_service.dart';
 import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
@@ -23,6 +22,11 @@ class _StatsData {
 
 class _StatsScreenState extends State<StatsScreen> {
   late Future<_StatsData> _future;
+
+  /// Build SHA injected by the CI workflow (see
+  /// scripts/inject-build-sha.sh). Empty if the build wasn't made
+  /// via the CI workflow (e.g. local `flutter run`).
+  static const String _buildSha = String.fromEnvironment('BUILD_SHA');
 
   @override
   void initState() {
@@ -352,9 +356,12 @@ class _DebugZone extends StatelessWidget {
           const SizedBox(height: AppSpacing.m),
           const Divider(height: 1, color: Color(0xFFEEEEEE)),
           const SizedBox(height: AppSpacing.m),
-          // Build / LLM diagnostics. This is read-only info so users
-          // can tell a fresh APK from a stale install (build SHA) and
-          // see at a glance whether the LLM is configured.
+          // Build diagnostic. The build SHA is injected by the
+          // GitHub Actions workflow (see scripts/inject-build-sha.sh)
+          // and is the single most reliable way to tell a fresh
+          // APK from a stale install — the GitHub Actions run
+          // number alone doesn't help if you have two APKs from
+          // the same run.
           Row(
             children: [
               const Icon(
@@ -374,21 +381,14 @@ class _DebugZone extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.s),
+          // Read the build SHA from the dart-define. Empty if
+          // the build wasn't made via the CI workflow (e.g. local
+          // `flutter run`).
           _DiagnosticRow(
             label: 'Build',
-            value: BytezService.buildSha.isEmpty
-                ? '(not injected)'
-                : BytezService.buildSha,
-          ),
-          _DiagnosticRow(
-            label: 'LLM key',
-            value: BytezService.keyFromDartDefine
-                ? 'configured (from dart-define)'
-                : 'fallback (build-time define missing)',
-          ),
-          _DiagnosticRow(
-            label: 'LLM model',
-            value: 'Qwen/Qwen3-4B (Bytez)',
+            value: _buildSha.isEmpty
+                ? '(not injected — local build?)'
+                : _buildSha,
           ),
         ],
       ),

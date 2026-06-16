@@ -36,37 +36,7 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      - name: Inject Bytez API key + build SHA as Flutter dart-defines
-        env:
-          BYTEZ_API_KEY: ${{ secrets.BYTEZ_API_KEY }}
-          BUILD_SHA: ${{ github.sha }}
-        run: python3 scripts/inject-bytez-dart-defines.py android/gradle.properties
 
-      - name: Verify dart-defines landed in gradle.properties
-        # Print the actual dart-defines line (with the API
-        # key value replaced by a sha256 fingerprint) so the build
-        # log proves the value was written. If the line is missing
-        # or the value is empty, the Flutter APK won't have LLM
-        # access.
-        run: |
-          set -e
-          LINE=$(grep '^dart-defines=' android/gradle.properties)
-          if [ -z "$LINE" ]; then
-            echo "::error::dart-defines is NOT in android/gradle.properties"
-            exit 1
-          fi
-          # Print the line in full (the BYTEZ_API_KEY value is shown
-          # — it's the user's own secret in their own CI logs). The
-          # build log is already private to the repo. This is the
-          # simplest way to prove the value was written.
-          echo "  -> $LINE"
-          # Also print a sha256 fingerprint so anyone scanning the
-          # log can confirm a value is set without reading it.
-          # We extract the substring between two known markers
-          # using awk with a separator that doesn't trigger the
-          # surrounding secret-redaction preprocessor.
-          FINGERPRINT=$(echo "$LINE" | tr ',' '\n' | head -1 | awk -F= '{print $3}' | sha256sum | cut -c1-12)
-          echo "  -> BYTEZ_API_KEY sha256_12=$FINGERPRINT"
 
       - name: Setup JDK
         uses: actions/setup-java@v4
