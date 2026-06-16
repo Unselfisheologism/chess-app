@@ -1,31 +1,25 @@
 #!/usr/bin/env python3
-"""
-Injects the Bytez API key + build SHA from the environment into a
-Flutter `gradle.properties` file as a `dart-defines=...` line.
+"""Injects Bytez API key + build SHA into Flutter gradle.properties
+as a `dart-defines=...` line.
 
-The Flutter 3.22 Gradle plugin (flutter.groovy line 1140) reads
-from the project property `dart-defines` (NOT `flutter.dart-defines`).
-The value is a single comma-separated string passed verbatim to
-`flutter assemble --DartDefines=<value>`.
+The Flutter 3.22 Gradle plugin (flutter.groovy:1140) reads the
+project property `dart-defines`. The value is passed verbatim as
+`--DartDefines=<value>` to `flutter assemble`.
 
 The Flutter tool's `decodeDartDefines()` in
 packages/flutter_tools/lib/src/build_info.dart then:
   1. Splits the value by comma
-  2. For each `KEY=VALUE` entry, runs it through
-     `base64.decoder.fuse(utf8.decoder)` to decode.
+  2. For each entry, runs it through
+     `base64.decoder.fuse(utf8.decoder)` to decode to "KEY=VALUE"
 
-So each KEY and each VALUE must be base64-encoded UTF-8. Writing
-them raw causes `Error parsing assemble command: ...` from
-flutter assemble.
+So each comma-separated entry must be a single base64-encoded
+"KEY=VALUE" string. Format:
+    dart-defines=B64("KEY1=VAL1"),B64("KEY2=VAL2")
 
-Idempotent: strips any prior `dart-defines=` line first.
-
-Usage:
-    BYTEZ_API_KEY=*** BUILD_SHA=abcdef python3 scripts/inject-bytez-dart-defines.py path/to/gradle.properties
-
-The env-var names and dart-define keys are stored as base64 in this
-file because the project-wide secret-redaction preprocessor
-truncates anything that looks like a NAME=value literal.
+Writes to BOTH android/gradle.properties and android/app/gradle.properties
+because the plugin is applied at the module (android/app/) level
+and we cannot rely on child-project gradle.properties inheritance
+in this Gradle version.
 """
 import base64
 import hashlib
@@ -34,42 +28,73 @@ import sys
 import pathlib
 
 
-# base64("BYTEZ_API_KEY") and base64("BUILD_SHA")
+# base64-encoded env-var names (dodge the secret-redactor)
 ENV_KEY = base64.b64decode("QllURVpfQVBJX0tFWQ==").decode("ascii")
 ENV_SHA = base64.b64decode("QlVJTERfU0hB").decode("ascii")
-# The Flutter 3.22 Gradle plugin reads this property name from
-# gradle.properties (see flutter.groovy line 1140).
 DEFINE_KEY = "dart-defines"
+NL = b"\n"
 
 
-def _b64(value: str) -> str:
-    """base64-encode a UTF-8 string. Each dart-define KEY and VALUE
-    must be base64-encoded or flutter assemble throws FormatException."""
+def _b64(value):
     return base64.b64encode(value.encode("utf-8")).decode("ascii")
 
 
-def _short_hash(value: str) -> str:
-    """First 8 chars of sha256. Lets CI logs prove a value was set
-    without leaking the secret."""
+def _short_hash(value):
     if not value:
         return "<empty>"
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
 
 
-def main() -> int:
-    target = sys.argv[1] if len(sys.argv) > 1 else "android/gradle.properties"
-    path = pathlib.Path(target)
+def _write_to(path, api_key, build_sha):
+    """Write (or replace) the dart-defines line in one gradle.properties."""
+    if path.exists():
+        text = path.read_text()
+        lines = text.splitlines()
+    else:
+        lines = []
+    filtered = [ln for ln in lines if not ln.startswith(DEFINE_KEY + "=")]
+    stripped = len(lines) - len(filtered)
+    if stripped:
+        print(
+            "::notice::Stripped "
+            + str(stripped)
+            + " prior "
+            + DEFINE_KEY
+            + " line(s) from "
+            + str(path)
+        )
+    line = (
+        DEFINE_KEY
+        + "="
+        + _b64(ENV_KEY + "=" + api_key)
+        + ","
+        + _b64(ENV_SHA + "=" + build_sha)
+    )
+    filtered.append(line)
+    # write_bytes bypasses platform text-mode \n -> \r\n conversion.
+    path.write_bytes(NL.join([s.encode("utf-8") for s in filtered]) + NL)
 
-    if not path.exists():
-        print("::error::gradle.properties not found at " + target, file=sys.stderr)
+
+def main():
+    primary = sys.argv[1] if len(sys.argv) > 1 else "android/gradle.properties"
+    primary_path = pathlib.Path(primary)
+
+    if not primary_path.exists():
+        print("::error::gradle.properties not found at " + primary, file=sys.stderr)
         return 1
+
+    # Write to BOTH the parent and the module gradle.properties.
+    # The Flutter Gradle plugin is applied at android/app/ so
+    # `project` in the plugin is that module; writing to the
+    # module's gradle.properties guarantees findProperty() sees it.
+    module_path = primary_path.parent / "app" / "gradle.properties"
+    targets = [primary_path]
+    if module_path.parent.exists():
+        targets.append(module_path)
 
     api_key = os.environ.get(ENV_KEY, "")
     build_sha = os.environ.get(ENV_SHA, "")
 
-    # Loud diagnostics: if the secret is missing in the GitHub
-    # environment, we want to know IMMEDIATELY, not after the build
-    # silently produces an APK with an empty BYTEZ_API_KEY.
     if not api_key:
         sys.stderr.write(
             "::error::" + ENV_KEY + " is empty in the build environment. "
@@ -92,49 +117,13 @@ def main() -> int:
     else:
         print("::notice::" + ENV_SHA + "=" + build_sha)
 
-    # Read existing content. Use splitlines() to normalize both
-    # \n and \r\n endings, then write with explicit \n to avoid
-    # Windows CRLF creeping into the dart-defines value (which
-    # flutter assemble would reject as a malformed FormatException).
-    text = path.read_text()
-    lines = text.splitlines()
-    filtered = [ln for ln in lines if not ln.startswith(DEFINE_KEY + "=")]
-    stripped = len(lines) - len(filtered)
-    if stripped:
-        print(
-            "::notice::Stripped "
-            + str(stripped)
-            + " prior "
-            + DEFINE_KEY
-            + " line(s) from "
-            + target
-        )
+    for t in targets:
+        _write_to(t, api_key, build_sha)
 
-    # Build the line. Format: dart-defines=B64("KEY1=VAL1"),B64("KEY2=VAL2")
-    # Each comma-separated entry is a SINGLE base64-encoded string
-    # that decodes to "KEY=VALUE". The base64 alphabet (A-Z a-z
-    # 0-9 + / =) contains no commas, so the comma split in
-    # decodeDartDefines() is safe. The `=` padding is only valid
-    # at the end of each entry, never in the middle.
-    line = (
-        DEFINE_KEY
-        + "="
-        + _b64(ENV_KEY + "=" + api_key)
-        + ","
-        + _b64(ENV_SHA + "=" + build_sha)
-    )
-    filtered.append(line)
-
-    # Write with explicit \n separators to keep the dart-defines
-    # value clean. Using write_bytes() bypasses the platform text
-    # mode that would convert \n to \r\n on Windows.
-    path.write_bytes(("\n".join(filtered) + "\n").encode("utf-8"))
-
-    # CI-log redaction: print a redacted version of the line so the
-    # build log proves the value was written, but the secret itself
-    # is replaced with a hash.
     print(
-        "::notice::Wrote dart-defines: "
+        "::notice::Wrote dart-defines to "
+        + str(len(targets))
+        + " file(s). Sample: "
         + DEFINE_KEY
         + "="
         + _b64(ENV_KEY + "=sha256:" + _short_hash(api_key))
