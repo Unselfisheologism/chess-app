@@ -43,16 +43,16 @@ jobs:
         run: python3 scripts/inject-bytez-dart-defines.py android/gradle.properties
 
       - name: Verify dart-defines landed in gradle.properties
-        # Print the actual flutter.dart-defines line (with the API
+        # Print the actual dart-defines line (with the API
         # key value replaced by a sha256 fingerprint) so the build
         # log proves the value was written. If the line is missing
         # or the value is empty, the Flutter APK won't have LLM
         # access.
         run: |
           set -e
-          LINE=$(grep '^flutter.dart-defines=' android/gradle.properties)
+          LINE=$(grep '^dart-defines=' android/gradle.properties)
           if [ -z "$LINE" ]; then
-            echo "::error::flutter.dart-defines is NOT in android/gradle.properties"
+            echo "::error::dart-defines is NOT in android/gradle.properties"
             exit 1
           fi
           # Print the line in full (the BYTEZ_API_KEY value is shown

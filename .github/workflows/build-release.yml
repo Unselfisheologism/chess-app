@@ -50,9 +50,9 @@ jobs:
       - name: Verify dart-defines landed in gradle.properties
         run: |
           set -e
-          LINE=$(grep '^flutter.dart-defines=' android/gradle.properties)
+          LINE=$(grep '^dart-defines=' android/gradle.properties)
           if [ -z "$LINE" ]; then
-            echo "::error::flutter.dart-defines is NOT in android/gradle.properties"
+            echo "::error::dart-defines is NOT in android/gradle.properties"
             exit 1
           fi
           echo "  -> $LINE"

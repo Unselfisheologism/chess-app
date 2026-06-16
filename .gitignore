@@ -40,3 +40,4 @@ ios/ManWen.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
 .env
 .env.local
 android/app/src/main/assets/nsfw_model.tflite
+runlog.txt

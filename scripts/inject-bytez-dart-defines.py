@@ -36,7 +36,16 @@ import pathlib
 # base64 decodings (computed once at module load)
 ENV_KEY = base64.b64decode("QllURVpfQVBJX0tFWQ==").decode("ascii")
 ENV_SHA = base64.b64decode("QlVJTERfU0hB").decode("ascii")
-DEFINE_KEY = "flutter.dart-defines"
+# The Flutter 3.22 Gradle plugin (flutter.groovy line 1140) reads
+# from the project property "dart-defines" (NOT "flutter.dart-defines"
+# — that's what the new-style Kotlin plugin uses, but this project
+# uses the old-style Groovy plugin applied via
+# `id "dev.flutter.flutter-gradle-plugin"` which internally applies
+# the Groovy plugin from packages/flutter_tools/gradle/src/main/groovy/
+# flutter.groovy). The value is a single comma-separated string of
+# KEY=VALUE pairs that gets passed verbatim to `flutter assemble
+# --DartDefines=<value>`, which then splits on commas.
+DEFINE_KEY = "dart-defines"
 
 
 def _short_hash(value: str) -> str:
