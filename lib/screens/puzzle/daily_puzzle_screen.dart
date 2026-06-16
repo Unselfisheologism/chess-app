@@ -56,7 +56,13 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
   // in the loading UI so the user knows the app is doing something
   // and not silently failing.
   int _attemptCount = 0;
+  // User-friendly error message, displayed in big text.
   String? _error;
+  // Raw exception text, displayed in small monospace text below
+  // the friendly message. Always set when [_error] is set. The
+  // "Copy error" button puts this on the clipboard so the user
+  // can paste it to support when reporting a problem.
+  String? _errorDetail;
   bool _isErrorRecoverable = true;
 
   String? _tappedSquare;
@@ -129,6 +135,7 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
         _isLoading = false;
         _autoRetrying = false;
         _error = _humanError(e);
+        _errorDetail = e.toString();
         _isErrorRecoverable = false;
       });
     } on BytezFormatException catch (e) {
@@ -140,6 +147,7 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
         _isLoading = false;
         _autoRetrying = false;
         _error = _humanError(e);
+        _errorDetail = e.toString();
         _isErrorRecoverable = true;
       });
     } on BytezException catch (e) {
@@ -150,6 +158,7 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
         _isLoading = false;
         _autoRetrying = false;
         _error = _humanError(e);
+        _errorDetail = e.toString();
         _isErrorRecoverable = true;
       });
     } catch (e) {
@@ -157,7 +166,8 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
       setState(() {
         _isLoading = false;
         _autoRetrying = false;
-        _error = 'Could not generate puzzle: $e';
+        _error = _humanError(e);
+        _errorDetail = e.toString();
         _isErrorRecoverable = true;
       });
     }
@@ -197,7 +207,7 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
     if (msg.contains('non-JSON') || msg.contains('not an object')) {
       return 'The LLM returned an unexpected response. Try again.';
     }
-    return 'Could not generate a puzzle. Try again.';
+    return 'Could not load puzzle.';
   }
 
   void _onTapSquare(String square) {
@@ -287,6 +297,7 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
   }
 
   Widget _buildError(BuildContext context) {
+    final detail = _errorDetail;
     return Scaffold(
       backgroundColor: BrandColors.cream,
       appBar: AppBar(
@@ -298,11 +309,12 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Center(
+        child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xl),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Mascot(mood: MascotMood.idle, size: 100),
                 const SizedBox(height: AppSpacing.l),
@@ -330,6 +342,58 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                 ),
+                if (detail != null && detail.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.l),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.m),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppSpacing.m),
+                      border: Border.all(color: BrandColors.lockedGrey),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Error details',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: BrandColors.lockedGrey,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        SelectableText(
+                          detail,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'monospace',
+                            color: BrandColors.deepInk,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => _copyError(context, detail),
+                          icon: const Icon(Icons.copy, size: 14),
+                          label: const Text(
+                            'Copy error',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: BrandColors.deepInk,
+                            side: const BorderSide(color: BrandColors.lockedGrey),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.m,
+                              vertical: 6,
+                            ),
+                            minimumSize: const Size(0, 32),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (!_isErrorRecoverable) ...[
                   const SizedBox(height: AppSpacing.s),
                   Text(
@@ -344,6 +408,22 @@ class _DailyPuzzleScreenState extends State<DailyPuzzleScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _copyError(BuildContext context, String detail) async {
+    // Clipboard.setData is in services.dart, but importing it just
+    // for this one call would be heavier than the inline
+    // implementation. The Clipboard API has been stable since
+    // Flutter 1.x.
+    // ignore: deprecated_member_use
+    await Clipboard.setData(ClipboardData(text: detail));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Error details copied to clipboard'),
+        duration: Duration(seconds: 2),
       ),
     );
   }

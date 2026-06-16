@@ -66,7 +66,13 @@ class BytezService {
   /// a properly-built APK from a local-dev build.
   static final bool keyFromDartDefine = _envApiKey.isNotEmpty;
 
-  static const _timeout = Duration(seconds: 30);
+  /// HTTP timeout for a single Bytez call. 60s is generous enough
+  /// for the Qwen3-4B model to cold-start on Bytez's shared
+  /// inference infra, but short enough that the user isn't
+  /// staring at a loading spinner for minutes. Combined with the
+  /// 3-attempt retry with exponential backoff (1s, 2s, 4s), the
+  /// worst-case wall time for a single LLM call is ~190s.
+  static const _timeout = Duration(seconds: 60);
   static const _maxAttempts = 3;
 
   final http.Client _client;

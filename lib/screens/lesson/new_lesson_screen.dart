@@ -42,6 +42,7 @@ class _NewLessonScreenState extends State<NewLessonScreen> {
   bool _isLoading = true;
   int _attemptCount = 0;
   String? _error;
+  String? _errorDetail;
   bool _isErrorRecoverable = true;
 
   @override
@@ -100,6 +101,7 @@ class _NewLessonScreenState extends State<NewLessonScreen> {
       setState(() {
         _isLoading = false;
         _error = _humanError(e);
+        _errorDetail = e.toString();
         _isErrorRecoverable = false;
       });
     } on BytezFormatException catch (e) {
@@ -107,6 +109,7 @@ class _NewLessonScreenState extends State<NewLessonScreen> {
       setState(() {
         _isLoading = false;
         _error = _humanError(e);
+        _errorDetail = e.toString();
         _isErrorRecoverable = true;
       });
     } on BytezException catch (e) {
@@ -114,13 +117,15 @@ class _NewLessonScreenState extends State<NewLessonScreen> {
       setState(() {
         _isLoading = false;
         _error = _humanError(e);
+        _errorDetail = e.toString();
         _isErrorRecoverable = true;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = 'Could not generate a lesson: $e';
+        _error = _humanError(e);
+        _errorDetail = e.toString();
         _isErrorRecoverable = true;
       });
     }
@@ -229,6 +234,7 @@ class _NewLessonScreenState extends State<NewLessonScreen> {
   }
 
   Widget _buildError(BuildContext context) {
+    final detail = _errorDetail;
     return Scaffold(
       backgroundColor: BrandColors.cream,
       appBar: AppBar(
@@ -240,11 +246,12 @@ class _NewLessonScreenState extends State<NewLessonScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Center(
+        child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xl),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Mascot(mood: MascotMood.idle, size: 100),
                 const SizedBox(height: AppSpacing.l),
@@ -272,6 +279,58 @@ class _NewLessonScreenState extends State<NewLessonScreen> {
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                 ),
+                if (detail != null && detail.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.l),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.m),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppSpacing.m),
+                      border: Border.all(color: BrandColors.lockedGrey),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Error details',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: BrandColors.lockedGrey,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        SelectableText(
+                          detail,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'monospace',
+                            color: BrandColors.deepInk,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => _copyError(context, detail),
+                          icon: const Icon(Icons.copy, size: 14),
+                          label: const Text(
+                            'Copy error',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: BrandColors.deepInk,
+                            side: const BorderSide(color: BrandColors.lockedGrey),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.m,
+                              vertical: 6,
+                            ),
+                            minimumSize: const Size(0, 32),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (!_isErrorRecoverable) ...[
                   const SizedBox(height: AppSpacing.s),
                   Text(
@@ -286,6 +345,18 @@ class _NewLessonScreenState extends State<NewLessonScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _copyError(BuildContext context, String detail) async {
+    // ignore: deprecated_member_use
+    await Clipboard.setData(ClipboardData(text: detail));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Error details copied to clipboard'),
+        duration: Duration(seconds: 2),
       ),
     );
   }
