@@ -49,10 +49,11 @@ class BytezService {
   static const String _fallbackApiKey = 'd435d199df604833b7fb99d72a23571b';
 
   /// Resolved API key: dart-define from CI, or the hardcoded
-  /// fallback. Both are `const` so the value is baked into the APK
-  /// at compile time and `String.fromEnvironment` returns the
-  /// real injected value when present.
-  static const String apiKey =
+  /// fallback. `_envApiKey` is const (compile-time), so this
+  /// expression is still evaluated at compile time and the
+  /// chosen value is baked into the APK. It cannot itself be
+  /// `const` because `.isNotEmpty` is not a const method.
+  static final String apiKey =
       _envApiKey.isNotEmpty ? _envApiKey : _fallbackApiKey;
 
   /// Build SHA for diagnostics, injected alongside the API key.
@@ -63,7 +64,7 @@ class BytezService {
   /// True iff the resolved key came from the dart-define (not the
   /// fallback). Surfaced on the Stats screen so the user can tell
   /// a properly-built APK from a local-dev build.
-  static const bool keyFromDartDefine = _envApiKey.isNotEmpty;
+  static final bool keyFromDartDefine = _envApiKey.isNotEmpty;
 
   static const _timeout = Duration(seconds: 30);
   static const _maxAttempts = 3;
