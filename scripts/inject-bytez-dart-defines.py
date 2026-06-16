@@ -1,30 +1,31 @@
 #!/usr/bin/env python3
 """
 Injects the Bytez API key + build SHA from the environment into a
-Flutter `gradle.properties` file as a `flutter.dart-defines=...` line.
+Flutter `gradle.properties` file as a `dart-defines=...` line.
 
-The Flutter Gradle plugin (since 3.10) reads `flutter.dart-defines`
-from gradle.properties and forwards them to `flutter build` as
-`--dart-define` flags. This is the canonical way to inject
-build-time secrets into a Flutter Android build without touching
-build.gradle.
+The Flutter 3.22 Gradle plugin (flutter.groovy line 1140) reads
+from the project property `dart-defines` (NOT `flutter.dart-defines`).
+The value is a single comma-separated string passed verbatim to
+`flutter assemble --DartDefines=<value>`.
 
-Idempotent: strips any prior `flutter.dart-defines=` line first, so
-reruns on the same file do not accumulate.
+The Flutter tool's `decodeDartDefines()` in
+packages/flutter_tools/lib/src/build_info.dart then:
+  1. Splits the value by comma
+  2. For each `KEY=VALUE` entry, runs it through
+     `base64.decoder.fuse(utf8.decoder)` to decode.
+
+So each KEY and each VALUE must be base64-encoded UTF-8. Writing
+them raw causes `Error parsing assemble command: ...` from
+flutter assemble.
+
+Idempotent: strips any prior `dart-defines=` line first.
 
 Usage:
     BYTEZ_API_KEY=*** BUILD_SHA=abcdef python3 scripts/inject-bytez-dart-defines.py path/to/gradle.properties
 
 The env-var names and dart-define keys are stored as base64 in this
 file because the project-wide secret-redaction preprocessor
-truncates anything that looks like a NAME=value literal. The
-base64-encoded literals here are decoded at runtime; the source
-itself never contains a bare API-key name.
-
-Values are written UNQUOTED. The Flutter Gradle plugin's
-comma-splitter is naive (`string.split(",")`), so quoting is not
-needed and quoting can confuse downstream parsers. Bytez API keys
-and git SHAs are alphanumeric, so no escaping is required.
+truncates anything that looks like a NAME=value literal.
 """
 import base64
 import hashlib
@@ -33,19 +34,18 @@ import sys
 import pathlib
 
 
-# base64 decodings (computed once at module load)
+# base64("BYTEZ_API_KEY") and base64("BUILD_SHA")
 ENV_KEY = base64.b64decode("QllURVpfQVBJX0tFWQ==").decode("ascii")
 ENV_SHA = base64.b64decode("QlVJTERfU0hB").decode("ascii")
-# The Flutter 3.22 Gradle plugin (flutter.groovy line 1140) reads
-# from the project property "dart-defines" (NOT "flutter.dart-defines"
-# — that's what the new-style Kotlin plugin uses, but this project
-# uses the old-style Groovy plugin applied via
-# `id "dev.flutter.flutter-gradle-plugin"` which internally applies
-# the Groovy plugin from packages/flutter_tools/gradle/src/main/groovy/
-# flutter.groovy). The value is a single comma-separated string of
-# KEY=VALUE pairs that gets passed verbatim to `flutter assemble
-# --DartDefines=<value>`, which then splits on commas.
+# The Flutter 3.22 Gradle plugin reads this property name from
+# gradle.properties (see flutter.groovy line 1140).
 DEFINE_KEY = "dart-defines"
+
+
+def _b64(value: str) -> str:
+    """base64-encode a UTF-8 string. Each dart-define KEY and VALUE
+    must be base64-encoded or flutter assemble throws FormatException."""
+    return base64.b64encode(value.encode("utf-8")).decode("ascii")
 
 
 def _short_hash(value: str) -> str:
@@ -77,8 +77,6 @@ def main() -> int:
             "The LLM in the resulting APK will be non-functional.\n"
         )
     else:
-        # Print length + short hash so the log proves the value is
-        # present without leaking it.
         print(
             "::notice::"
             + ENV_KEY
@@ -94,6 +92,10 @@ def main() -> int:
     else:
         print("::notice::" + ENV_SHA + "=" + build_sha)
 
+    # Read existing content. Use splitlines() to normalize both
+    # \n and \r\n endings, then write with explicit \n to avoid
+    # Windows CRLF creeping into the dart-defines value (which
+    # flutter assemble would reject as a malformed FormatException).
     text = path.read_text()
     lines = text.splitlines()
     filtered = [ln for ln in lines if not ln.startswith(DEFINE_KEY + "=")]
@@ -108,31 +110,42 @@ def main() -> int:
             + target
         )
 
-    # Build the line UNQUOTED. Format:
-    #   flutter.dart-defines=ENV_KEY=<value>,ENV_SHA=<value>
-    # Bytez API keys and git SHAs are alphanumeric, so this is safe
-    # to write without escaping. The Flutter Gradle plugin's
-    # comma-splitter then produces --dart-define flags whose values
-    # are the raw strings, which is what String.fromEnvironment
-    # expects.
-    line = DEFINE_KEY + "=" + ENV_KEY + "=" + api_key + "," + ENV_SHA + "=" + build_sha
-    filtered.append(line)
-    path.write_text("\n".join(filtered) + "\n")
-
-    # CI-log redaction: print a redacted version that shows the line
-    # was written, but replaces the secret with a hash.
-    redacted = (
+    # Build the line. Format: dart-defines=B64(KEY)=B64(VALUE),B64(KEY)=B64(VALUE)
+    # base64 alphabet (A-Z a-z 0-9 + / =) contains no commas, so
+    # the comma split in decodeDartDefines() is safe.
+    line = (
         DEFINE_KEY
         + "="
-        + ENV_KEY
+        + _b64(ENV_KEY)
+        + "="
+        + _b64(api_key)
+        + ","
+        + _b64(ENV_SHA)
+        + "="
+        + _b64(build_sha)
+    )
+    filtered.append(line)
+
+    # Write with explicit \n separators to keep the dart-defines
+    # value clean. Using write_bytes() bypasses the platform text
+    # mode that would convert \n to \r\n on Windows.
+    path.write_bytes(("\n".join(filtered) + "\n").encode("utf-8"))
+
+    # CI-log redaction: print a redacted version of the line so the
+    # build log proves the value was written, but the secret itself
+    # is replaced with a hash.
+    print(
+        "::notice::Wrote dart-defines: "
+        + DEFINE_KEY
+        + "="
+        + _b64(ENV_KEY)
         + "=sha256:"
         + _short_hash(api_key)
         + ","
-        + ENV_SHA
+        + _b64(ENV_SHA)
         + "="
         + build_sha
     )
-    print("::notice::Wrote dart-defines: " + redacted)
     return 0
 
 
