@@ -20,8 +20,14 @@ file because the project-wide secret-redaction preprocessor
 truncates anything that looks like a NAME=value literal. The
 base64-encoded literals here are decoded at runtime; the source
 itself never contains a bare API-key name.
+
+Values are written UNQUOTED. The Flutter Gradle plugin's
+comma-splitter is naive (`string.split(",")`), so quoting is not
+needed and quoting can confuse downstream parsers. Bytez API keys
+and git SHAs are alphanumeric, so no escaping is required.
 """
 import base64
+import hashlib
 import os
 import sys
 import pathlib
@@ -31,9 +37,14 @@ import pathlib
 ENV_KEY = base64.b64decode("QllURVpfQVBJX0tFWQ==").decode("ascii")
 ENV_SHA = base64.b64decode("QlVJTERfU0hB").decode("ascii")
 DEFINE_KEY = "flutter.dart-defines"
-EQ = chr(61)        # "="  (built char-by-char to dodge redactor)
-Q = chr(34)         # '"'
-C = chr(44)         # ','
+
+
+def _short_hash(value: str) -> str:
+    """First 8 chars of sha256. Lets CI logs prove a value was set
+    without leaking the secret."""
+    if not value:
+        return "<empty>"
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
 
 
 def main() -> int:
@@ -47,14 +58,36 @@ def main() -> int:
     api_key = os.environ.get(ENV_KEY, "")
     build_sha = os.environ.get(ENV_SHA, "")
 
+    # Loud diagnostics: if the secret is missing in the GitHub
+    # environment, we want to know IMMEDIATELY, not after the build
+    # silently produces an APK with an empty BYTEZ_API_KEY.
     if not api_key:
-        sys.stderr.write("::warning::" + ENV_KEY + " is empty - LLM calls in the APK will fail at runtime.\n")
+        sys.stderr.write(
+            "::error::" + ENV_KEY + " is empty in the build environment. "
+            "Set the GitHub Actions secret BYTEZ_API_KEY and rerun. "
+            "The LLM in the resulting APK will be non-functional.\n"
+        )
+    else:
+        # Print length + short hash so the log proves the value is
+        # present without leaking it.
+        print(
+            "::notice::"
+            + ENV_KEY
+            + " loaded: length="
+            + str(len(api_key))
+            + " sha256_8="
+            + _short_hash(api_key)
+        )
     if not build_sha:
-        sys.stderr.write("::warning::" + ENV_SHA + " is empty - build-hash diagnostic will be blank.\n")
+        sys.stderr.write(
+            "::warning::" + ENV_SHA + " is empty - build-hash diagnostic will be blank.\n"
+        )
+    else:
+        print("::notice::" + ENV_SHA + "=" + build_sha)
 
     text = path.read_text()
     lines = text.splitlines()
-    filtered = [ln for ln in lines if not ln.startswith(DEFINE_KEY + EQ)]
+    filtered = [ln for ln in lines if not ln.startswith(DEFINE_KEY + "=")]
     stripped = len(lines) - len(filtered)
     if stripped:
         print(
@@ -66,13 +99,30 @@ def main() -> int:
             + target
         )
 
-    # Build: flutter.dart-defines=ENV_KEY="<v>",ENV_SHA="<v>"
-    line = DEFINE_KEY + EQ + ENV_KEY + EQ + Q + api_key + Q + C + ENV_SHA + EQ + Q + build_sha + Q
+    # Build the line UNQUOTED. Format:
+    #   flutter.dart-defines=ENV_KEY=<value>,ENV_SHA=<value>
+    # Bytez API keys and git SHAs are alphanumeric, so this is safe
+    # to write without escaping. The Flutter Gradle plugin's
+    # comma-splitter then produces --dart-define flags whose values
+    # are the raw strings, which is what String.fromEnvironment
+    # expects.
+    line = DEFINE_KEY + "=" + ENV_KEY + "=" + api_key + "," + ENV_SHA + "=" + build_sha
     filtered.append(line)
     path.write_text("\n".join(filtered) + "\n")
 
-    # Redact the value in the log so CI logs don't leak the secret.
-    redacted = DEFINE_KEY + EQ + ENV_KEY + EQ + Q + "<redacted>" + Q + C + ENV_SHA + EQ + Q + build_sha + Q
+    # CI-log redaction: print a redacted version that shows the line
+    # was written, but replaces the secret with a hash.
+    redacted = (
+        DEFINE_KEY
+        + "="
+        + ENV_KEY
+        + "=sha256:"
+        + _short_hash(api_key)
+        + ","
+        + ENV_SHA
+        + "="
+        + build_sha
+    )
     print("::notice::Wrote dart-defines: " + redacted)
     return 0
 
