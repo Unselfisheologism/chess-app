@@ -110,19 +110,18 @@ def main() -> int:
             + target
         )
 
-    # Build the line. Format: dart-defines=B64(KEY)=B64(VALUE),B64(KEY)=B64(VALUE)
-    # base64 alphabet (A-Z a-z 0-9 + / =) contains no commas, so
-    # the comma split in decodeDartDefines() is safe.
+    # Build the line. Format: dart-defines=B64("KEY1=VAL1"),B64("KEY2=VAL2")
+    # Each comma-separated entry is a SINGLE base64-encoded string
+    # that decodes to "KEY=VALUE". The base64 alphabet (A-Z a-z
+    # 0-9 + / =) contains no commas, so the comma split in
+    # decodeDartDefines() is safe. The `=` padding is only valid
+    # at the end of each entry, never in the middle.
     line = (
         DEFINE_KEY
         + "="
-        + _b64(ENV_KEY)
-        + "="
-        + _b64(api_key)
+        + _b64(ENV_KEY + "=" + api_key)
         + ","
-        + _b64(ENV_SHA)
-        + "="
-        + _b64(build_sha)
+        + _b64(ENV_SHA + "=" + build_sha)
     )
     filtered.append(line)
 
@@ -138,13 +137,9 @@ def main() -> int:
         "::notice::Wrote dart-defines: "
         + DEFINE_KEY
         + "="
-        + _b64(ENV_KEY)
-        + "=sha256:"
-        + _short_hash(api_key)
+        + _b64(ENV_KEY + "=sha256:" + _short_hash(api_key))
         + ","
-        + _b64(ENV_SHA)
-        + "="
-        + build_sha
+        + _b64(ENV_SHA + "=" + build_sha)
     )
     return 0
 
