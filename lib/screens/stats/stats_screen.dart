@@ -7,6 +7,13 @@ import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 
+/// Build SHA injected by the CI workflow (see
+/// scripts/inject-build-sha.sh). Top-level constant so both
+/// [_StatsScreenState] and the [_DebugZone] widget below can
+/// read it. Empty if the build wasn't made via the CI workflow
+/// (e.g. local `flutter run`).
+const String _kBuildSha = String.fromEnvironment('BUILD_SHA');
+
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
 
@@ -22,11 +29,6 @@ class _StatsData {
 
 class _StatsScreenState extends State<StatsScreen> {
   late Future<_StatsData> _future;
-
-  /// Build SHA injected by the CI workflow (see
-  /// scripts/inject-build-sha.sh). Empty if the build wasn't made
-  /// via the CI workflow (e.g. local `flutter run`).
-  static const String _buildSha = String.fromEnvironment('BUILD_SHA');
 
   @override
   void initState() {
@@ -386,9 +388,9 @@ class _DebugZone extends StatelessWidget {
           // `flutter run`).
           _DiagnosticRow(
             label: 'Build',
-            value: _buildSha.isEmpty
+            value: _kBuildSha.isEmpty
                 ? '(not injected — local build?)'
-                : _buildSha,
+                : _kBuildSha,
           ),
         ],
       ),
