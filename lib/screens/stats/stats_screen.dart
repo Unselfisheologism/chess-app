@@ -149,6 +149,14 @@ class _StatsScreenState extends State<StatsScreen> {
               children: [
                 _StreakGrid(streak: data.streak),
                 const SizedBox(height: AppSpacing.l),
+                // 7-day history grid — the visual representation
+                // of "your streak". Even when the user has no
+                // streak yet, this makes the empty state look
+                // intentional ("here's where your streak will
+                // appear") rather than broken ("the page shows
+                // nothing").
+                _StreakHistory(events: data.events),
+                const SizedBox(height: AppSpacing.l),
                 _DebugZone(
                   onResetStreak: _resetStreak,
                   onClearLog: _clearAnalytics,
@@ -548,5 +556,209 @@ class _EventRow extends StatelessWidget {
 
   static String _formatProps(Map<String, Object?> p) {
     return p.entries.map((e) => '${e.key}=${e.value}').join(' · ');
+  }
+
+  // ---------------------------------------------------------------
+  // Streak history (7-day grid)
+  // ---------------------------------------------------------------
+}
+
+/// Visual 7-day streak history. Shows the last 7 calendar days as
+/// a row of circles, filled if the user completed at least one
+/// lesson that day, empty otherwise. Today is highlighted with a
+/// gold border. The completion dates are sourced from
+/// `lesson_complete` analytics events (which are tracked
+/// independently of the streak state, so they survive even if the
+/// streak service is reset).
+///
+/// When the user has no completions in the last 7 days, shows a
+/// friendly "No streak yet" message instead of an empty grid.
+class _StreakHistory extends StatelessWidget {
+  final List<AnalyticsEvent> events;
+  const _StreakHistory({required this.events});
+
+  @override
+  Widget build(BuildContext context) {
+    final completedDays = _completedDaysFromEvents(events);
+    final now = DateTime.now();
+    // 7 days: today and the 6 days before it. Build the list
+    // oldest-first so the row reads left-to-right chronologically.
+    final days = List.generate(7, (i) {
+      final d = DateTime(now.year, now.month, now.day)
+          .subtract(Duration(days: 6 - i));
+      final key = _dayKey(d);
+      return _DayCell(
+        date: d,
+        isCompleted: completedDays.contains(key),
+        isToday: i == 6,
+      );
+    });
+
+    final hasAnyCompletion = completedDays.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSpacing.m),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: BrandColors.deepInk,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Last 7 days',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: BrandColors.deepInk,
+                ),
+              ),
+              const Spacer(),
+              if (hasAnyCompletion)
+                Text(
+                  '${completedDays.length} of 7 days',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: BrandColors.lockedGrey,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.m),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: days,
+          ),
+          if (!hasAnyCompletion) ...[
+            const SizedBox(height: AppSpacing.m),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              decoration: BoxDecoration(
+                color: BrandColors.cream,
+                borderRadius: BorderRadius.circular(AppSpacing.s),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.emoji_events_outlined,
+                    color: BrandColors.gold,
+                    size: 18,
+                  ),
+                  const SizedBox(width: AppSpacing.s),
+                  Expanded(
+                    child: Text(
+                      'No streak yet. Complete a lesson to start your streak!',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: BrandColors.deepInk,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Set of `yyyy-mm-dd` keys for the days on which the user
+  /// completed at least one lesson. The analytics event log is the
+  /// source of truth (it persists across streak resets and app
+  /// reinstalls in the same SharedPreferences namespace, and is
+  /// not gated on the streak service).
+  static Set<String> _completedDaysFromEvents(List<AnalyticsEvent> events) {
+    final out = <String>{};
+    for (final e in events) {
+      if (e.type != 'lesson_complete') continue;
+      out.add(_dayKey(e.timestamp));
+    }
+    return out;
+  }
+
+  static String _dayKey(DateTime t) {
+    final d = DateTime(t.year, t.month, t.day);
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+}
+
+/// One day in the 7-day streak history. A filled gold circle if
+/// the user completed a lesson that day, an empty white circle
+/// with a grey border otherwise. Today is highlighted with a
+/// thicker gold border.
+class _DayCell extends StatelessWidget {
+  final DateTime date;
+  final bool isCompleted;
+  final bool isToday;
+
+  const _DayCell({
+    required this.date,
+    required this.isCompleted,
+    required this.isToday,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dowLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    // DateTime.weekday is 1=Mon..7=Sun
+    final dow = dowLabels[date.weekday - 1];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: isCompleted ? BrandColors.gold : Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isToday
+                  ? BrandColors.gold
+                  : (isCompleted
+                      ? BrandColors.gold
+                      : BrandColors.lockedGrey.withOpacity(0.4)),
+              width: isToday ? 2.5 : 1.5,
+            ),
+          ),
+          child: isCompleted
+              ? const Icon(
+                  Icons.check,
+                  size: 18,
+                  color: Colors.white,
+                )
+              : null,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          dow,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+            color: isToday ? BrandColors.deepInk : BrandColors.lockedGrey,
+          ),
+        ),
+        Text(
+          '${date.day}',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
+            color: isToday ? BrandColors.deepInk : BrandColors.lockedGrey,
+          ),
+        ),
+      ],
+    );
   }
 }

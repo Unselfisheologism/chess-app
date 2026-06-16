@@ -296,16 +296,36 @@ class _StreakChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    // Vertical: icon on top, big value in the middle, small
+    // label below. Compact horizontal chip was confusing when
+    // value=0 ("0" with no context looked broken); the vertical
+    // layout reads as "fire icon / 0 / days" which is
+    // unambiguous.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, color: BrandColors.gold, size: 20),
-        const SizedBox(width: AppSpacing.xs),
+        Icon(icon, color: BrandColors.gold, size: 18),
+        const SizedBox(height: 1),
         Text(
           '$value',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: BrandColors.deepInk,
-                fontWeight: FontWeight.w700,
+                color: value > 0
+                    ? BrandColors.deepInk
+                    : BrandColors.lockedGrey,
+                fontWeight: FontWeight.w800,
+                height: 1.0,
               ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: BrandColors.lockedGrey,
+            fontWeight: FontWeight.w600,
+            height: 1.0,
+          ),
         ),
       ],
     );
