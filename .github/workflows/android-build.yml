@@ -49,6 +49,11 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
+      - name: Inject build SHA as Flutter dart-defines
+        env:
+          BUILD_SHA: ${{ github.sha }}
+        run: bash scripts/inject-build-sha.sh android/gradle.properties
+
 
 
       - name: Setup Signing Keys
