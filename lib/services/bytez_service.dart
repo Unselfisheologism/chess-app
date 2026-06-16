@@ -33,13 +33,37 @@ class BytezService {
   ///   flutter build apk --dart-define=BYTEZ_API_KEY=...
   /// (see scripts/inject-bytez-dart-defines.py and the GitHub
   /// Actions workflows). Empty in dev / local builds without the
-  /// define — see [isConfigured].
-  static const String apiKey = String.fromEnvironment('BYTEZ_API_KEY');
+  /// define — see [_fallbackApiKey] and [apiKey].
+  static const String _envApiKey = String.fromEnvironment('BYTEZ_API_KEY');
+
+  /// Last-resort fallback. Used only when the dart-define is empty
+  /// (e.g. a local `flutter run` build, or a CI build where the
+  /// secret was not configured). Kept in source so the app is
+  /// never broken in a "not configured" state — the user can
+  /// always open the daily puzzle and new lesson, and any
+  /// 401/403 from the API surfaces as a clear auth error rather
+  /// than a misleading "not configured" message.
+  ///
+  /// The dart-define from the CI workflow ALWAYS takes priority
+  /// over this fallback (see [apiKey]).
+  static const String _fallbackApiKey = 'd435d199df604833b7fb99d72a23571b';
+
+  /// Resolved API key: dart-define from CI, or the hardcoded
+  /// fallback. Both are `const` so the value is baked into the APK
+  /// at compile time and `String.fromEnvironment` returns the
+  /// real injected value when present.
+  static const String apiKey =
+      _envApiKey.isNotEmpty ? _envApiKey : _fallbackApiKey;
 
   /// Build SHA for diagnostics, injected alongside the API key.
   /// Surfaced on the Stats screen so users can tell a fresh APK
   /// from a stale install.
   static const String buildSha = String.fromEnvironment('BUILD_SHA');
+
+  /// True iff the resolved key came from the dart-define (not the
+  /// fallback). Surfaced on the Stats screen so the user can tell
+  /// a properly-built APK from a local-dev build.
+  static const bool keyFromDartDefine = _envApiKey.isNotEmpty;
 
   static const _timeout = Duration(seconds: 30);
   static const _maxAttempts = 3;
@@ -236,26 +260,84 @@ class BytezService {
     return _parseJsonContent(content);
   }
 
-  /// The model returns content as a JSON string (because we set
-  /// `response_format=json_object`). The string itself is sometimes
-  /// wrapped in ```json fences — strip them before parsing.
+  /// The model is told to return JSON (via `response_format=
+  /// json_object`), but in practice it sometimes wraps the JSON
+  /// in markdown fences, prefixes it with prose ("Here is the
+  /// puzzle: {...}"), or both. This method:
+  ///   1. Strips ``` fences if present
+  ///   2. If the result is not valid JSON, scans for the first
+  ///      balanced {...} substring and tries to parse that
+  ///   3. Throws BytezFormatException with a sample of the
+  ///      content if all of the above fail
   Map<String, dynamic> _parseJsonContent(String content) {
     var s = content.trim();
+
+    // 1) Strip ```json ... ``` or ``` ... ``` wrappers.
     if (s.startsWith('```')) {
-      // Strip leading ```json or ``` and trailing ```
+      // Find the end of the opening fence line.
       final firstNewline = s.indexOf('\n');
       if (firstNewline > 0) s = s.substring(firstNewline + 1);
       if (s.endsWith('```')) s = s.substring(0, s.length - 3);
       s = s.trim();
     }
+
+    // 2) Direct parse attempt.
     try {
       return jsonDecode(s) as Map<String, dynamic>;
-    } catch (e) {
+    } catch (_) {
+      // Fall through to brace-scan.
+    }
+
+    // 3) Scan for the first balanced {...} substring. The model
+    //    sometimes outputs prose before the JSON ("Here is the
+    //    puzzle: {...}") and a naive jsonDecode on the whole
+    //    string would fail. We find the outermost matching braces
+    //    starting from the first '{'.
+    final firstBrace = s.indexOf('{');
+    if (firstBrace < 0) {
       throw BytezFormatException(
-        'Model returned non-JSON content. First 200 chars: '
+        'Model returned no JSON object. First 200 chars: '
         '${s.substring(0, s.length.clamp(0, 200))}',
       );
     }
+    var depth = 0;
+    var inString = false;
+    var escape = false;
+    for (var i = firstBrace; i < s.length; i++) {
+      final c = s[i];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (c == r'\\') {
+        escape = true;
+        continue;
+      }
+      if (c == '"') {
+        inString = !inString;
+        continue;
+      }
+      if (inString) continue;
+      if (c == '{') {
+        depth++;
+      } else if (c == '}') {
+        depth--;
+        if (depth == 0) {
+          final candidate = s.substring(firstBrace, i + 1);
+          try {
+            return jsonDecode(candidate) as Map<String, dynamic>;
+          } catch (_) {
+            // Try the next brace group.
+            break;
+          }
+        }
+      }
+    }
+
+    throw BytezFormatException(
+      'Model returned non-JSON content. First 200 chars: '
+      '${s.substring(0, s.length.clamp(0, 200))}',
+    );
   }
 
   // -- prompts -------------------------------------------------------

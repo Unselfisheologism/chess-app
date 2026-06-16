@@ -382,9 +382,9 @@ class _DebugZone extends StatelessWidget {
           ),
           _DiagnosticRow(
             label: 'LLM key',
-            value: BytezService.isConfigured
-                ? 'configured'
-                : 'missing — rebuild with BYTEZ_API_KEY',
+            value: BytezService.keyFromDartDefine
+                ? 'configured (from dart-define)'
+                : 'fallback (build-time define missing)',
           ),
           _DiagnosticRow(
             label: 'LLM model',
