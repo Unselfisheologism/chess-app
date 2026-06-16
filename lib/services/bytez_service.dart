@@ -54,7 +54,11 @@ class BytezService {
   /// [BytezAuthException] immediately, so the caller can show a
   /// "missing build configuration" message instead of a vague
   /// network error.
-  bool get isConfigured => apiKey.isNotEmpty;
+  ///
+  /// Static so UI screens can check configuration from anywhere
+  /// (e.g. the stats screen diagnostic) without needing a
+  /// BytezService instance.
+  static bool get isConfigured => apiKey.isNotEmpty;
 
   /// Close the underlying HTTP client. Used by tests; production
   /// code uses the singleton and never closes.
