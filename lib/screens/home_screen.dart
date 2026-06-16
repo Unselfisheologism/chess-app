@@ -7,6 +7,7 @@ import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
 import 'lesson/lesson_player_screen.dart';
+import 'lesson/new_lesson_screen.dart';
 import 'play/match_screen.dart';
 import 'puzzle/daily_puzzle_screen.dart';
 import 'stats/stats_screen.dart';
@@ -68,6 +69,30 @@ class _HomeScreenState extends State<HomeScreen> {
     final next = lessonsCompleted + _streakOffset;
     if (next > kTotalDays) return kTotalDays; // capped
     return next;
+  }
+
+  /// Resolves the current day-of-launch from the cached streak and
+  /// pushes the Daily puzzle screen. The LLM uses the day index to
+  /// pick a theme, so consecutive days get different puzzles.
+  Future<void> _openDailyPuzzle() async {
+    int day = 1;
+    try {
+      final streak = await (_streakFuture ?? StreakService.instance.read());
+      day = streak.totalLessonsCompleted + 1;
+    } catch (_) {
+      // Default to day 1 if streak read fails.
+      day = 1;
+    }
+    if (!mounted) return;
+    unawaited(AnalyticsService.instance.track(
+      'daily_puzzle_open_from_home',
+      properties: {'day': day},
+    ));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DailyPuzzleScreen(day: day),
+      ),
+    );
   }
 
   @override
@@ -203,6 +228,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const Spacer(),
+              // Three-up card row: Daily puzzle | New lesson | Play chessito AI.
+              // The Daily puzzle card passes the current day index
+              // (lessons completed + 1) so each calendar day gets a
+              // fresh puzzle from the LLM. The "New lesson" card
+              // generates a brand-new LLM lesson (day 11+) when
+              // tapped. Play chessito AI is unchanged.
               Row(
                 children: [
                   Expanded(
@@ -210,9 +241,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: Icons.extension,
                       title: 'Daily puzzle',
                       subtitle: 'Find the move',
+                      onTap: _openDailyPuzzle,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s),
+                  Expanded(
+                    child: _SecondaryCard(
+                      icon: Icons.menu_book,
+                      title: 'New lesson',
+                      subtitle: 'Custom for you',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const DailyPuzzleScreen(day: 1),
+                          builder: (_) => const NewLessonScreen(),
                         ),
                       ),
                     ),

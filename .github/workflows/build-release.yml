@@ -41,6 +41,12 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
+      - name: Inject Bytez API key + build SHA as Flutter dart-defines
+        env:
+          BYTEZ_API_KEY: ${{ secrets.BYTEZ_API_KEY }}
+          BUILD_SHA: ${{ github.sha }}
+        run: python3 scripts/inject-bytez-dart-defines.py android/gradle.properties
+
       - name: Decode Android keystore
         working-directory: android
         env:
@@ -106,8 +112,14 @@ jobs:
 
       - name: Build iOS IPA
         working-directory: ./ios
+        env:
+          BYTEZ_API_KEY: ${{ secrets.BYTEZ_API_KEY }}
+          BUILD_SHA: ${{ github.sha }}
         run: |
-          flutter build ipa --export-options-plist=ExportOptions.plist
+          flutter build ipa \
+            --export-options-plist=ExportOptions.plist \
+            --dart-define=BYTEZ_API_KEY="${BYTEZ_API_KEY}" \
+            --dart-define=BUILD_SHA="${BUILD_SHA}"
 
       - name: Upload iOS artifact
         uses: actions/upload-artifact@v4

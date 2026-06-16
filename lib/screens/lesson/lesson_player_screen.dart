@@ -18,12 +18,34 @@ import 'shells/tap_square_shell.dart';
 /// user through each question, validates the answer, shows feedback,
 /// and lands on [CompletionScreen] at the end.
 ///
+/// Two entry points:
+///   - [LessonPlayerScreen] (day-based): loads from bundled assets
+///     via [LessonLoader]. Used for the curriculum days 1-10.
+///   - [LessonPlayerScreen.forLesson] (in-memory): runs a lesson
+///     that's been generated at runtime (e.g. by the LLM). Used
+///     for "New lesson" beyond the bundled set.
+///
 /// State is held locally; the streak service (U5) will hook in here
 /// once `markLessonComplete` exists.
 class LessonPlayerScreen extends StatefulWidget {
-  final int day;
+  /// Day index (1-10) to load from bundled assets. Mutually
+  /// exclusive with [LessonPlayerScreen.forLesson].
+  final int? day;
 
-  const LessonPlayerScreen({super.key, required this.day});
+  /// Pre-built lesson to run, typically from an LLM. When this is
+  /// non-null, [day] is ignored and the loader is bypassed.
+  final Lesson? lesson;
+
+  /// Convenience: day-based lesson (bundled).
+  const LessonPlayerScreen({super.key, this.day}) : lesson = null;
+
+  /// In-memory lesson (e.g. LLM-generated). [streakKey] is the
+  /// SharedPreferences key used to track completion; defaults to
+  /// the bundled-lesson key so streak counts as one lesson done.
+  const LessonPlayerScreen.forLesson(
+    this.lesson, {
+    super.key,
+  }) : day = null;
 
   @override
   State<LessonPlayerScreen> createState() => _LessonPlayerScreenState();
@@ -50,11 +72,38 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
   }
 
   Future<void> _load() async {
+    if (widget.lesson != null) {
+      // In-memory lesson (e.g. LLM-generated). No async load.
+      unawaited(AnalyticsService.instance.track('lesson_start', properties: {
+        'day': widget.lesson!.day,
+        'source': 'bytez',
+        'lesson_id': widget.lesson!.id,
+      }));
+      if (!mounted) return;
+      setState(() {
+        _lesson = widget.lesson;
+        _isLoading = false;
+      });
+      return;
+    }
+
+    final day = widget.day;
+    if (day == null) {
+      // Defensive: should never happen, the constructor enforces
+      // exactly one of {day, lesson} is provided.
+      setState(() {
+        _loadError = StateError('LessonPlayerScreen needs day or lesson');
+        _isLoading = false;
+      });
+      return;
+    }
+
     unawaited(AnalyticsService.instance.track('lesson_start', properties: {
-      'day': widget.day,
+      'day': day,
+      'source': 'bundled',
     }));
     try {
-      final lesson = await _loader.load(widget.day);
+      final lesson = await _loader.load(day);
       if (!mounted) return;
       setState(() {
         _lesson = lesson;
@@ -121,8 +170,14 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
       } else {
         // Lesson complete. Mark the streak (fire-and-forget; the
         // next read on the home screen will see the update).
+        // Use the lesson's own day number so LLM-generated
+        // lessons (day 11+) show the right number on the
+        // completion screen and analytics events.
+        final completedDay = _lesson!.day;
         unawaited(AnalyticsService.instance.track('lesson_complete', properties: {
-          'day': widget.day,
+          'day': completedDay,
+          'source': widget.lesson != null ? 'bytez' : 'bundled',
+          'lesson_id': _lesson!.id,
           'score': _score,
           'total': _lesson!.questions.length,
         }));
@@ -130,7 +185,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => CompletionScreen(
-              day: widget.day,
+              day: completedDay,
               score: _score,
               total: _lesson!.questions.length,
             ),

@@ -36,6 +36,12 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
+      - name: Inject Bytez API key + build SHA as Flutter dart-defines
+        env:
+          BYTEZ_API_KEY: ${{ secrets.BYTEZ_API_KEY }}
+          BUILD_SHA: ${{ github.sha }}
+        run: python3 scripts/inject-bytez-dart-defines.py android/gradle.properties
+
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:

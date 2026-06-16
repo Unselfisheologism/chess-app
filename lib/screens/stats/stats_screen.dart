@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../services/analytics_service.dart';
+import '../../services/bytez_service.dart';
 import '../../services/streak_service.dart';
 import '../../theme/brand.dart';
 import '../../theme/spacing.dart';
@@ -347,6 +348,86 @@ class _DebugZone extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.m),
+          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          const SizedBox(height: AppSpacing.m),
+          // Build / LLM diagnostics. This is read-only info so users
+          // can tell a fresh APK from a stale install (build SHA) and
+          // see at a glance whether the LLM is configured.
+          Row(
+            children: [
+              const Icon(
+                Icons.bug_report_outlined,
+                size: 16,
+                color: BrandColors.deepInk,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Diagnostics',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: BrandColors.deepInk,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s),
+          _DiagnosticRow(
+            label: 'Build',
+            value: BytezService.buildSha.isEmpty
+                ? '(not injected)'
+                : BytezService.buildSha,
+          ),
+          _DiagnosticRow(
+            label: 'LLM key',
+            value: BytezService.isConfigured
+                ? 'configured'
+                : 'missing — rebuild with BYTEZ_API_KEY',
+          ),
+          _DiagnosticRow(
+            label: 'LLM model',
+            value: 'Qwen/Qwen3-4B (Bytez)',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiagnosticRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DiagnosticRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              '$label',
+              style: const TextStyle(
+                fontSize: 11,
+                color: BrandColors.lockedGrey,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 11,
+                color: BrandColors.deepInk,
+                fontFamily: 'monospace',
+              ),
+            ),
           ),
         ],
       ),
