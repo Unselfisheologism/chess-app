@@ -61,7 +61,7 @@ class AnalyticsService {
       properties: properties,
     );
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _getPrefsWithRetry();
       final raw = prefs.getStringList(_kKey) ?? <String>[];
       raw.add(jsonEncode(event.toJson()));
       // Bound the log so it doesn't grow without limit.
@@ -81,24 +81,51 @@ class AnalyticsService {
 
   /// Returns all stored events, oldest first.
   Future<List<AnalyticsEvent>> read() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getStringList(_kKey) ?? <String>[];
-    final out = <AnalyticsEvent>[];
-    for (final line in raw) {
-      try {
-        final json = jsonDecode(line) as Map<String, dynamic>;
-        out.add(AnalyticsEvent.fromJson(json));
-      } catch (_) {
-        // Skip malformed entries silently.
+    try {
+      final prefs = await _getPrefsWithRetry();
+      final raw = prefs.getStringList(_kKey) ?? <String>[];
+      final out = <AnalyticsEvent>[];
+      for (final line in raw) {
+        try {
+          final json = jsonDecode(line) as Map<String, dynamic>;
+          out.add(AnalyticsEvent.fromJson(json));
+        } catch (_) {
+          // Skip malformed entries silently.
+        }
       }
+      return out;
+    } catch (e) {
+      if (kDebugMode) print('[analytics] read failed: $e');
+      return <AnalyticsEvent>[]; // empty list on failure
     }
-    return out;
   }
 
   /// Wipe the log. Useful for a hidden "reset analytics" button
   /// in a debug screen.
   Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefsWithRetry();
     await prefs.remove(_kKey);
+  }
+
+  /// Get a SharedPreferences instance with retry. The
+  /// `shared_preferences` plugin on Android sometimes throws
+  /// `PlatformException(channel-error, Unable to establish
+  /// connection on channel)` when called before the platform
+  /// side has registered the method channel — typically on cold
+  /// start, or when this is the first plugin touched by the
+  /// isolate. Three short retries with exponential backoff
+  /// (50ms, 100ms, 200ms) cover the common case without making
+  /// the user wait.
+  static Future<SharedPreferences> _getPrefsWithRetry() async {
+    Object? lastError;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await SharedPreferences.getInstance();
+      } catch (e) {
+        lastError = e;
+        await Future<void>.delayed(Duration(milliseconds: 50 * (1 << attempt)));
+      }
+    }
+    throw lastError ?? StateError('SharedPreferences unavailable');
   }
 }

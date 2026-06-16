@@ -137,9 +137,62 @@ class _StatsScreenState extends State<StatsScreen> {
             }
             if (snap.hasError) {
               return Center(
-                child: Text(
-                  'Failed to load stats: ${snap.error}',
-                  style: Theme.of(context).textTheme.bodyLarge,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.l),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: BrandColors.error,
+                        size: 48,
+                      ),
+                      const SizedBox(height: AppSpacing.m),
+                      Text(
+                        'Failed to load stats',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: AppSpacing.s),
+                      Text(
+                        'SharedPreferences channel was unreachable. '
+                        'This usually resolves itself on retry.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: BrandColors.lockedGrey,
+                            ),
+                      ),
+                      const SizedBox(height: AppSpacing.s),
+                      // Selectable so the user can copy the actual
+                      // exception if retry doesn't work.
+                      SelectableText(
+                        '${snap.error}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                          color: BrandColors.lockedGrey,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.l),
+                      ElevatedButton.icon(
+                        onPressed: _refresh,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Try again'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BrandColors.gold,
+                          foregroundColor: BrandColors.deepInk,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.l,
+                            vertical: AppSpacing.m,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.m),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }

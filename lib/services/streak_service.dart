@@ -88,7 +88,7 @@ class StreakService {
       _testInstance ?? (_testInstance = StreakService._());
 
   Future<StreakState> read() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefsWithRetry();
     final raw = prefs.getString(_kKey);
     if (raw == null) return StreakState.empty;
     try {
@@ -97,6 +97,28 @@ class StreakService {
     } catch (_) {
       return StreakState.empty;
     }
+  }
+
+  /// Get a SharedPreferences instance with retry. The
+  /// `shared_preferences` plugin on Android sometimes throws
+  /// `PlatformException(channel-error, Unable to establish
+  /// connection on channel)` when called before the platform
+  /// side has registered the method channel — typically on cold
+  /// start, or when this is the first plugin touched by the
+  /// isolate. Three short retries with exponential backoff
+  /// (50ms, 100ms, 200ms) cover the common case without making
+  /// the user wait.
+  static Future<SharedPreferences> _getPrefsWithRetry() async {
+    Object? lastError;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await SharedPreferences.getInstance();
+      } catch (e) {
+        lastError = e;
+        await Future<void>.delayed(Duration(milliseconds: 50 * (1 << attempt)));
+      }
+    }
+    throw lastError ?? StateError('SharedPreferences unavailable');
   }
 
   Future<void> _write(StreakState state) async {

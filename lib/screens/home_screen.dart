@@ -39,14 +39,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshStreak() async {
-    final next = StreakService.instance.read();
+    StreakState s;
+    try {
+      s = await StreakService.instance.read();
+    } catch (_) {
+      // SharedPreferences channel was unreachable after the
+      // service's built-in retries. Fall back to empty state
+      // rather than throwing — the streak chips already
+      // render `StreakState.empty` as all-zero, which is a
+      // graceful degraded state.
+      s = StreakState.empty;
+    }
     if (!mounted) return;
     setState(() {
-      _streakFuture = next;
-    });
-    final s = await next;
-    if (!mounted) return;
-    setState(() {
+      _streakFuture = Future.value(s);
       // After a lesson, jump to the next un-completed day.
       _selectedDay = _nextDayFor(s.totalLessonsCompleted);
     });
