@@ -77,7 +77,7 @@ jobs:
 
       - name: Build Android release AAB
         working-directory: ./android
-        run: ./gradlew bundleRelease
+        run: ./gradlew bundleRelease --rerun-tasks
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4

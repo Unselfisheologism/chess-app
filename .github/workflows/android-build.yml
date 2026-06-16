@@ -101,11 +101,11 @@ jobs:
 
       - name: Build Release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --rerun-tasks --no-daemon
 
       - name: Build Release AAB
         working-directory: android
-        run: ./gradlew bundleRelease --no-daemon
+        run: ./gradlew bundleRelease --rerun-tasks --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
